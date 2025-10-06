@@ -12,6 +12,7 @@ The following repositories are included as submodules at the repo root:
 - `ipfs-service/` – IPFS node service and off-chain worker (Python)
 - `docs/` – Obsidian-style documentation (Markdown)
 - `module-pallet/` – Pallet for module registration and communication (Rust)
+- `telemetry-module/` – Telemetry service/module (Rust)
 
 The `modsdk/` top-level also houses a Rust CLI/SDK (planned) and this coordination layer.
 
@@ -47,7 +48,7 @@ The `modsdk/` top-level also houses a Rust CLI/SDK (planned) and this coordinati
 4. Enter the unified dev shell:
 
    ```bash
-+  nix develop
+   nix develop
    # or targeted shells
    nix develop .#rust
    nix develop .#python
@@ -75,9 +76,10 @@ Use the provided `Makefile` targets from within `nix develop`:
 
 - `make fmt` – Format Rust, Python (ruff), and TS (prettier) where available
 - `make lint` – Clippy for Rust, ruff for Python, eslint for TS (if projects are configured)
-- `make build-rust` – Build Rust workspaces (`chain`, `module-pallet`, `mcp-registrar`)
+- `make build-rust` – Build Rust workspaces (`chain`, `module-pallet`, `mcp-registrar`, `telemetry-module`)
 - `make build-bridge` – PNPM build for `bridge`
 - `make build-ipfs` – Editable install for `ipfs-service`
+- `make build-telemetry` – Build only the `telemetry-module`
 - `make check` – `fmt` + `lint`
 - `make ci` – Runs check + builds for all
 

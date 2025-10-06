@@ -63,7 +63,7 @@
           ruff
 
           # Solidity / Foundry
-          foundry-bin
+          foundry
           solc
 
           # Repo tooling

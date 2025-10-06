@@ -26,3 +26,6 @@
 	path = cli
 	url = https://github.com/mod-net/cli.git
 	branch = main
+[submodule "telemetry-module"]
+	path = telemetry-module
+	url = https://github.com/mod-net/telemetry-module
