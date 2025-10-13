@@ -29,3 +29,8 @@
 [submodule "telemetry-module"]
 	path = telemetry-module
 	url = https://github.com/mod-net/telemetry-module
+	branch = main
+[submodule "modnet-portal"]
+	path = modnet-portal
+	url = https://github.com/mod-net/portal.git
+	branch = main
