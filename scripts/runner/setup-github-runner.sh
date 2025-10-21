@@ -38,7 +38,7 @@ if ! command -v jq >/dev/null 2>&1; then echo "[error] jq is required" >&2; exit
 # Ensure user exists
 if ! id -u "$RUNNER_USER" >/dev/null 2>&1; then
   echo "[info] Creating user $RUNNER_USER"
-  sudo useradd -m -s /bin/bash "$RUNNER_USER" || true
+  sudo useradd --s /bin/bash "$RUNNER_USER" || true
   if getent group docker >/dev/null; then sudo usermod -aG docker "$RUNNER_USER" || true; fi
 fi
 

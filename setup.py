@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Setup script for commune package
+Setup script for mod package
 """
 
 from setuptools import setup, find_packages
@@ -12,10 +12,10 @@ import sys
 with open('README.md', 'r', encoding='utf-8') as fh:
     long_description = fh.read()
 
-# Get version from commune package
+# Get version from mod package
 sys.path.insert(0, os.path.abspath('.'))
 try:
-    from commune import __version__
+    from mod import __version__
     version = __version__
 except ImportError:
     version = '0.1.0'  # Default version if import fails
@@ -96,6 +96,7 @@ setup(
     entry_points={
         'console_scripts': [
             'm=mod:main',
+            'c=mod:main'
         ],
     },
     keywords=['modular', 'sdk', 'machine learning', 'deep-learning', 'crypto'],
