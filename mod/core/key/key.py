@@ -574,6 +574,8 @@ class Key:
     def password_circuit(self, x):
         return
 
+    def time(self ):
+        return int(time.time())
     def password(self, udpate=False):
         x = m.get('password', update=udpate)
         if x != None:

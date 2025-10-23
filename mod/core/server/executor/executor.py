@@ -62,26 +62,14 @@ class Executor:
     def submit(self, 
                fn: Callable,
                 params = None,
-                args:dict=None, 
-                kwargs:dict=None, 
                 priority:int=1,
                 timeout=200, 
                 return_future:bool=True,
                 wait = True, 
                 path:str=None) -> Future:
         
-        args = args or []
-        kwargs = kwargs or {}
-        if params != None:
-            if isinstance(params, dict):
-                kwargs = params
-                if 'args' in kwargs and 'kwargs' in kwargs:
-                    args = kwargs.pop('args')
-                    kwargs = kwargs.pop('kwargs')
-            elif isinstance(params, list):
-                args = params
-            else:
-                raise ValueError(f"params must be a list or a dict {params, args, kwargs}")
+        params = params or {}
+        print(params, 'fammmm')
         # check if the queue is full and if so, raise an exception
         if self.task_queue.full():
             if wait:
@@ -95,11 +83,10 @@ class Executor:
             if self.shutdown:
                 raise RuntimeError("cannot schedule new futures after shutdown")
 
-            task = Task(fn=fn, params=dict(args=args, kwargs=kwargs), timeout=timeout, path=path)
+            task = Task(fn=fn, params=params, timeout=timeout, path=path)
             # add the work item to the queue
 
             # if the function has a cost attribute, multiply the priority by the cost
-            priority = kwargs.pop("priority", 1)
             if hasattr(fn, '__cost__'):
                 priority = fn.__cost__ * priority
 
@@ -214,11 +201,11 @@ class Executor:
         self = cls()
         futures = []
         for i in range(10):
-            futures += [self.submit(fn=fn, kwargs=dict(x=i))]
+            futures += [self.submit(fn=fn, params=dict(x=i))]
         for future in tqdm(futures):
             future.result()
         for i in range(10):
-            futures += [self.submit(fn=fn, kwargs=dict(x=i))]
+            futures += [self.submit(fn=fn, params=dict(x=i))]
 
         results = wait(futures, timeout=10)
         

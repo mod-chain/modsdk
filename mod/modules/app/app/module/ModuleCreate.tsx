@@ -76,7 +76,7 @@ export const CreateModule = ({ onClose, onSuccess }: CreateModuleProps) => {
       // Auto-generate URL if not provided
       const moduleToCreate = { ...newModule }
       if (!moduleToCreate.url) {
-        moduleToCreate.url = `https://${moduleToCreate.name.toLowerCase().replace(/\s+/g, '-')}.mod.ai`
+        moduleToCreate.url = `https://${moduleToCreate.name.toLowerCase().replace(/\s+/g, '-')}.commune.ai`
       }
 
       await client.call('add_module', moduleToCreate)

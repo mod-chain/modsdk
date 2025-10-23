@@ -99,7 +99,7 @@ export const UserAuth = ({ keyInstance }: UserAuthProps) => {
   const generateCurlExample = () => {
     if (!authHeaders || !functionName) return ''
     
-    return `curl -X POST https://api.mod.ai/call \\
+    return `curl -X POST https://api.commune.ai/call \\
   -H "Content-Type: application/json" \\
   -H "X-Auth-Data: ${authHeaders.data}" \\
   -H "X-Auth-Time: ${authHeaders.time}" \\

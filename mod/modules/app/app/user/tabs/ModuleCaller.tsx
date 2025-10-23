@@ -102,7 +102,7 @@ export const ModuleCaller = ({ keyInstance }: ModuleCallerProps) => {
               type="text"
               value={moduleUrl}
               onChange={(e) => setModuleUrl(e.target.value)}
-              placeholder="https://api.mod.ai/module/endpoint"
+              placeholder="https://api.commune.ai/module/endpoint"
               className="w-full mt-1 bg-black/50 border border-green-500/30 rounded px-3 py-2 text-green-400 font-mono text-sm placeholder-green-600/50 focus:outline-none focus:border-green-500"
             />
           </div>

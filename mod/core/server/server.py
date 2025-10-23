@@ -357,7 +357,7 @@ class Server:
         key = key or mod
         params = {**(params or {}), **extra_params}
         if remote:
-            return m.fn('pm/')(mod, params=params, port=port, key=key, cwd=cwd, daemon=daemon, volumes=volumes, env=env)
+            return m.mod('pm')().forward(mod, params=params, port=port, key=key, cwd=cwd, daemon=daemon, volumes=volumes, env=env)
         self.set_mod(mod=mod, params=params, key=key, public=public, fns=fns, port=port)
 
     def set_mod(self, 
@@ -395,7 +395,7 @@ class Server:
             try:
                 result =  self.forward(fn, request)
             except Exception as e:
-                result =  m.detailed_error(e)
+                result = m.detailed_error(e)
             return result
         # add CORS middleware
         self.app = FastAPI()

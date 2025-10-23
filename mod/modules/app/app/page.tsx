@@ -50,7 +50,7 @@ export default function Modules() {
         page_size: pageSize,
         ...(searchFilters.searchTerm ? { search: searchFilters.searchTerm } : {})
       }
-      const modulesData: ModuleType[] = await client.call('modules', params)
+      const modulesData: ModuleType[] = await client.call('mods', params)
       setState({ modules: modulesData, n: modulesData.length, loading: false, error: null })
     } catch (err: any) {
       setState({ modules: [], n: 0, loading: false, error: err.message || 'Failed to fetch modules' })

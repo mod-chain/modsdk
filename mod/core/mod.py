@@ -20,7 +20,7 @@ class Mod:
         "name": "mod",
         "version": "0.1.0",
         "desc": "A Python package for mod utilities",
-        "shortcuts": {},
+        "shortcuts": {'pm': 'server.pm'},
         "routes": {},
         "expose" : ["forward", "info"],
         "port_range": [50050, 50150]
@@ -962,21 +962,18 @@ class Mod:
         """
         if callable(fn):
             return fn
-        if isinstance(fn, str):
-            if hasattr(self, fn):
-                fn_obj = getattr(self, fn)
-            elif fn.startswith('/'):
-                fn_obj = getattr(self.mod(default_mod)(), fn[1:])
-            elif fn.endswith('/'):
-                fn_obj = getattr( self.mod(fn[:-1])(), default_fn)
-            elif '/' in fn:
-                mod, fn = fn.split('/')
-                mod = self.mod(mod)()
-                fn_obj = getattr(mod, fn)
-            else:
-                raise Exception(f'Function {fn} not found')
+        elif hasattr(self, fn):
+            fn_obj = getattr(self, fn)
+        elif fn.startswith('/'):
+            fn_obj = getattr(self.mod(default_mod)(), fn[1:])
+        elif fn.endswith('/'):
+            fn_obj = getattr(self.mod(fn[:-1])(), default_fn)
+        elif '/' in fn:
+            mod, fn = fn.split('/')
+            mod = self.mod(mod)()
+            fn_obj = getattr(mod, fn)
         else:
-            return fn
+            raise Exception(f'Function {fn} not found')
         if params:
             return fn_obj(**params)
         return fn_obj
@@ -1420,7 +1417,10 @@ class Mod:
     def rm_mod_gitignore(self, name):
         gitignore = self.gitignore()
         gitignore_path = self.gitignore_path()
-        self.put_text(gitignore_path, gitignore)
+        gitignore_mod_path = self.gitignore_mod_path(name)
+        if gitignore_mod_path in gitignore:
+            gitignore = gitignore.replace(gitignore_mod_path, '')
+            self.put_text(gitignore_path, gitignore)
         return {'name': name, 'path': gitignore_mod_path, 'msg': 'Removed from .gitignore'}
 
     def fork(self, base = 'base', name= 'base2', path=None, update=True, ):

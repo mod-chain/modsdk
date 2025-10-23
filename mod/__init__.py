@@ -1,2 +1,4 @@
 from .core.mod import Mod
-Mod().initialize(globals())
+_mod = Mod()
+for fn in dir(Mod()):
+    globals()[fn] = getattr(_mod, fn)

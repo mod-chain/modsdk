@@ -38,7 +38,7 @@ export const DefaultModule : ModuleType = {
       url: 'agi.com',
       desc: 'agi module',
       hash: '0x1234567890',
-      network: 'mod',
+      network: 'commune',
       code: '0x1234567890',
       tags: [],
       comments: ['comment1', 'comment2'],

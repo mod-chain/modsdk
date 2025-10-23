@@ -32,8 +32,7 @@ class App:
             # 'cmd': 'npm start',
             'daemon': remote,
         }
-        print(params)
-        return m.fn('pm/run')(**params)
+        return m.mod('pm')().run(**params)
 
     def api(self):   
         return m.serve('api', port=self.api_port)

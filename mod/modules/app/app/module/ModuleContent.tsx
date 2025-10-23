@@ -86,7 +86,7 @@ const buildFileTree = (files: Record<string, string>): FileNode[] => {
     parts.forEach((part, idx) => {
       const isFile = idx === parts.length - 1;
       const currentPath = parts.slice(0, idx + 1).join('/');
-      let child = current.children!.find((c) => m.name === part);
+      let child = current.children!.find((c) => c.name === part);
       if (!child) {
         child = {
           name: part,

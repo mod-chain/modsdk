@@ -89,7 +89,7 @@ export default function Modules() {
           ...(searchTerm ? { search: searchTerm } : {}),
         }
 
-        const raw = (await client.call('modules', params, { signal: ac.signal })) as ModuleType[]
+        const raw = (await client.call('mods', params, { signal: ac.signal })) as ModuleType[]
         const pageItems = Array.isArray(raw) ? raw : []
         const nextList = append ? [...state.modules, ...pageItems] : pageItems
         const dedup = new Map(nextList.map((m) => [m.key, m]))
@@ -268,7 +268,7 @@ export default function Modules() {
           ))}
 
           {state.loading &&
-            Array.from({ length: Math.max(3, Math.min(userPageSize, maxCols * 2)) }).map((_, i) => (
+            Array.from({ length: Math.max(4, Math.min(userPageSize, maxCols * 2)) }).map((_, i) => (
               <div
                 key={`skeleton-${i}`}
                 className="h-40 rounded border border-green-900/40 bg-gradient-to-r from-green-900/10 via-green-800/10 to-green-900/10 animate-pulse"

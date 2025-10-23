@@ -36,13 +36,6 @@ class Task:
 
     def set_params(self, params):
         self.params = params
-        if 'args' in self.params and 'kwargs' in self.params:
-            self.params['args'], self.params['kwargs'] = self.params.get('args', []), self.params.get('kwargs', {})
-        else:
-            if isinstance(params, dict) and len(params) > 0:
-                self.params = dict(args=[], kwargs=params)
-            elif isinstance(params, list) and len(params) > 0:
-                self.params = dict(args=params, kwargs={})
         return self.params
 
     @property
@@ -68,7 +61,7 @@ class Task:
         if (not self.future.set_running_or_notify_cancel()) or (time.time() - self.start_time) > self.timeout:
             self.future.set_exception(TimeoutError('Task timed out'))
         try:
-            data = self.fn(*self.params['args'], **self.params['kwargs'])
+            data = self.fn(**self.params)
             self.status = 'complete'
         except Exception as e:
             data = detailed_error(e)

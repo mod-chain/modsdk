@@ -111,12 +111,12 @@ export function Loading() {
           ].map((c, i) => (
             <rect
               key={i}
-              x={m.x - 2}
-              y={m.y - 2}
+              x={c.x - 2}
+              y={c.y - 2}
               width="6"
               height="6"
               fill="#00ff00"
-              style={{ animation: 'blink 2.4s linear infinite', animationDelay: m.d, opacity: 0.25 }}
+              style={{ animation: 'blink 2.4s linear infinite', animationDelay: c.d, opacity: 0.25 }}
               shapeRendering="crispEdges"
             />
           ))}

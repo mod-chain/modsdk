@@ -19,7 +19,7 @@ interface UserProfileProps {
 
 export const UserProfile = ({ user, isOpen, onClose, keyInstance, onLogout }: UserProfileProps) => {
   const [isAnimating, setIsAnimating] = useState(false)
-  const [activeTab, setActiveTab] = useState<'profile' | 'sign' | 'modules'>('profile')
+  const [activeTab, setActiveTab] = useState<'profile' | 'sign' | 'mod'>('profile')
   const [isDragging, setIsDragging] = useState(false)
   const [dragStartX, setDragStartX] = useState(0)
   const [panelWidth, setPanelWidth] = useState(400)
@@ -133,7 +133,7 @@ export const UserProfile = ({ user, isOpen, onClose, keyInstance, onLogout }: Us
           <div className="p-4 space-y-4 overflow-y-auto h-[calc(100%-9rem)]">
             {activeTab === 'profile' && <InfoTab keyInstance={keyInstance} />}
             {activeTab === 'sign' && <SignVerifyTab keyInstance={keyInstance} />}
-            {activeTab === 'modules' && <ModuleCaller keyInstance={keyInstance} />}
+            {activeTab === 'mod' && <ModuleCaller keyInstance={keyInstance} />}
           </div>
 
           {/* Resize indicator (retro blink) */}

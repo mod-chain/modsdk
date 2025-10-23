@@ -11,7 +11,7 @@ import { SidebarProvider } from './context/SidebarContext'
 
 export const metadata: Metadata = {
   title: "dhub",
-  description: "dhub - the hub for modules. built with mod-ai/mod",
+  description: "dhub - the hub for modules. built with commune-ai/commune",
   robots: 'all',
   icons: [{ rel: 'icon', url: '/favicon.ico' }]
 }

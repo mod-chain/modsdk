@@ -8,13 +8,11 @@ from .utils import load_json, save_json, logs
 import mod as m 
 
 class Api:
-
-    endpoints = ['modules', 'add_module', 'remove',  'update', 'test',  'mod', 'info', 'functions', 'n', 'ask', 'mods', 'mod']
+    endpoints = ['mods', 'add_module', 'remove',  'update', 'test', 'info', 'functions', 'n', 'ask', 'mods', 'mod']
     port = 8000
     url = '0.0.0.0:8000'
     tempo = 600
-    mods_path = os.path.expanduser('~/.mod/api/modules')
-
+    path = '~/.mod/api'    
     def __init__(self,
                 expose_functions = ['chain/info', 'chain/forward', 'chain/stream', 'chain/stream_forward'],
                 background:bool = False, 
@@ -24,21 +22,20 @@ class Api:
         self.chain = m.mod('chain')()
 
     def paths(self):
-        return self.ls(self.mods_path)
+        return self.ls(self.path)
 
     def n(self, search=None):
         return len(self.names(search=search))
 
     def names(self, search=None, **kwargs):
-        return  [m.split('.')[0] for m in m.mods(search=search, **kwargs)]
+        return  [m for m in m.mods(search=search, **kwargs)]
 
     def executor(self,  max_workers=8, mode='thread'):
         if mode == 'process':
             from concurrent.futures import ProcessPoolExecutor
             executor =  ProcessPoolExecutor(max_workers=max_workers)
         elif mode == 'thread':
-            from concurrent.futures import ThreadPoolExecutor
-            executor =  ThreadPoolExecutor(max_workers=max_workers)
+            executor =  m.mod('server.executor')(max_workers=max_workers)
         elif mode == 'async':
             from mod.core.api.src.async_executor import AsyncExecutor
             executor = AsyncExecutor(max_workers=max_workers)
@@ -57,11 +54,11 @@ class Api:
                     schema = True,
                     df = False,
                     names = False,
-                    threads=8,
+                    threads=2,
                     features = ['name', 'schema', 'key'],
                     max_age=None, 
-                    mode = 'process',
-                    verbose=False, **kwargs):
+                    mode = 'thread',
+                    verbose=True, **kwargs):
 
         modules = self.names(search=search, update=update)
         start_idx = (page - 1) * page_size
@@ -73,42 +70,45 @@ class Api:
             executor = self.executor(max_workers=threads, mode=mode)
             futures = []
             for module in modules:
+                print(module)
                 future = executor.submit(
-                                        self.module,
-                                        module, 
+                                        self.mod,
+                                        params=dict(module=module, 
                                         max_age=max_age, 
                                         update=update, 
                                         content=content, 
-                                        schema=schema
+                                        schema=schema)
                                         )
                 futures.append(future)
             for future in m.as_completed(futures):
-                result = future.result()
-                if isinstance(result, dict) and 'name' in result:
-                    print(f"Module {result['name']} loaded")
+                try:
+                    result = m.copy(future.result())
+                except Exception as e: 
+                    continue
                 if self.check_module_data(result):
                     results.append(result)
                 else:
                     m.print(result, color='red', verbose=verbose)
                 progress_bar.update(1)
-            executor.shutdown(wait=True)
+            # executor.shutdown(wait=True)
         else:
 
             for module in modules:
-                print(f"Loading module {module}")
-                result = self.mod(module, update=update, content=content, schema=schema)
-                if self.check_module_data(result):
-                    results.append(result)
-                else: 
-                    m.print(result, color='red', verbose=verbose)
+                result = self.mod(module=module, update=update, content=content, schema=schema)
+                results.append(m.copy(result))
                 progress_bar.update(1)
         if df:
             results = m.df(results)
         if names:
-            results = [m['name'] for m in results if 'name' in m]
+            results = [m['cid'] for m in results if 'name' in m]
         return results
-
     modules = mods
+    def is_serializable(self, obj):
+        try:
+            json.dumps(obj)
+            return True
+        except (TypeError, OverflowError):
+            return False
 
     def mod(self, module:str,  update=False,  content=False, schema = False, public= False, **kwargs):
         """
@@ -117,17 +117,18 @@ class Api:
         2. If not, fetch module info from module server
         """
         module = module.replace('.', '/')
+        print(module)
         try:
             path = f'modules/{module}.json'
             info = self.store.get(path, None, update=update)
             if info == None:
                 # fetch module info from module server
                 print(f"Fetching module {module} info from server -> {path}...")
-                info = m.info(module=module, content=True, schema=True, public=True, **kwargs)
+                info = m.info(mod=module, content=True, schema=True, public=True, **kwargs)
                 self.store.put(path, info)
+                
             if not content:
                 info.pop("content", None)
-                info.pop('code', None)
             if not schema:
                 info.pop("schema", None)
             if not public: 
@@ -163,12 +164,14 @@ class Api:
         if not isinstance(module, dict):
             return False
         features = ['name', 'key', 'schema']
+        if not self.is_serializable(module):
+            return False
         return True
 
     def module_path(self, module):
-        return f"{self.mods_path}/{module}.json"
+        return f"{self.path}/{module}.json"
 
-    def ls(self, path=mods_path):
+    def ls(self, path=path):
         if not os.path.exists(path):
             print('WARNING IN LS --> Path does not exist:', path)
             return []
