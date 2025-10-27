@@ -1,0 +1,21 @@
+networks:
+  default:
+    driver: bridge
+services:
+  api:
+    container_name: api
+    deploy: {}
+    entrypoint: bash -c "m serve port=8000 key=api remote=0 mod=api"
+    environment: []
+    image: mod:latest
+    ports:
+    - 8000:8000
+    restart: unless-stopped
+    shm_size: 100g
+    volumes:
+    - ~/mod:/root/mod
+    - ~/.mod/server:/root/.mod/server
+    - ~/.mod/key/api:/root/.mod/key/api
+    - ~/.mod/api:/root/.mod/api
+    - ~/mod/mod/modules/api:/root/mod/mod/modules/api
+    working_dir: /root/mod/mod/modules/api

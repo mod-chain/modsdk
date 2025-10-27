@@ -3,6 +3,7 @@ import os
 import pandas as pd
 from typing import List, Dict, Union, Optional, Any
 import mod as m
+
 import subprocess
 import json
 from datetime import datetime
@@ -16,42 +17,38 @@ class PM:
                 path = m.lib_path, 
                 image = None, # default image name is the folder name
                 store_path='~/.mod/server', 
-                working_dir = '/app',
                 **kwargs):
     
-        self.working_dir = working_dir
         self.path = path
         self.store = m.mod('store')(store_path)
 
-    def forward(self, 
-                mod='api', 
-                port=None, 
-                key = None,
-                image='mod:latest', 
-                daemon=True, d = None, # daemon
-                cwd = None,
-                volumes = None,
-                docker_in_docker = False,
-                env={},
-                call_interval = 0.2, # time between calls to check if server is up
-                params = None, 
-                **extra_params):
+    def forward(self,  
+                mod : str ='api', 
+                port : Optional[int] = None, 
+                params : Optional[dict] = None,
+                key : Optional[str] = None,
+                image:str='mod:latest', 
+                daemon:bool=True,
+                cwd : Optional[str] = None,
+                volumes : Optional[dict] = None,
+                docker_in_docker:bool = False,
+                env:Optional[dict]=None,
+                call_interval : float = 0.2, # time between calls to check if server is up
+                ):
         """
         Runs a mod as a Docker container with port forwarding as a server.
         """
         env = env or {}
-        params = {**(params or {}), **(extra_params or {})}
-        daemon = daemon if d is None else bool(d)
+        params = params or {}
         params.update({'port': port or m.free_port(), 'key': key or mod, 'remote': False, 'mod': mod})
         cmd = f"m serve {self.params2cmd(params)}"
-        # cmd = None
         volumes = self.volumes(mod, key=params['key'])
         dirpath = m.dirpath(mod)
         docker_dirpath = self.convert_docker_path(dirpath)
-        print(f'Starting server {mod} from image {image} on port {params["port"]} in {"daemon" if daemon else "foreground"} mode...')
         if docker_in_docker:
             docker_dirpath = os.environ.get('DOCKER_SOCKET_PATH', '/var/run/docker.sock')
             volumes[docker_dirpath] = docker_dirpath
+        working_directory = volumes[ dirpath.replace(m.home_path, '~')]
         result = self.run(name=mod, 
                           image=image, 
                           port=params['port'], 
@@ -60,132 +57,91 @@ class PM:
                           env=env, 
                           volumes=volumes, 
                           cwd=cwd or dirpath, 
-                          working_dir=volumes[dirpath])
-        # while True:
-        #     try:
-        #         result = m.call(mod+'/info', {'schema': False})
-        #         if 'key' in result and 'cid' in result:
-        #             break
-        #         return result
-        #     except Exception as e:
-        #         m.sleep(call_interval)
+                          working_dir=working_directory)
+        self.namespace(update=1)
         return result
+
+    def nodes(self,mod):
+        return self.dockerfile(mod)
 
     def run(self,
             name : str = "mod",
-            image: str = 'mod:latest',
-            fn = 'fn',
-            cwd: Optional = None, 
-            cmd: str = None,
-            volumes: Dict = None,
+            image: str = 'mod:latest', # the docker image to use
+            cwd: Optional = None, # the working directory to run docker-compose in
+            cmd: str = None, entrypoint: str = None, # command to run in the container
+            volumes: Dict = None, # volume mappings
             resources: Union[List, str, bool] = None,
             shm_size: str = '100g',
-            sudo: bool = False,
-            build: bool = False,
-            network_mode: Optional = None,  # 'host', 'bridge', etc.
+            network: Optional = None,  # 'host', 'bridge', etc.
             port: int = None,
             ports: Union[List, Dict[int, int]] = None,
             daemon: bool = True,
             remote: bool = False,
-            entrypoint: Optional[str] = None,
             env: Optional[Dict] = None,
-            working_dir = None,
-            compose_path: str = None,
-            restart: str = 'unless-stopped'
+            working_dir : str = '/app',
+            compose_path: str = None, # the path to the compose file
+            restart: str = 'unless-stopped',
+            build =  None,
             ) -> Dict:
         """
         Generate and run a Docker container using docker-compose.
         """ 
-        working_dir = working_dir or self.working_dir  
         name = self.name2process(name)
+        if self.server_exists(name):
+            self.kill(name)
         # Build the service configuration
-        service_config = {
+        serve_config = {
             'image': image,
             'container_name': name,
             'restart': restart
         }
         # Handle command
-        if cmd:
-            service_config['entrypoint'] = f'bash -c "{cmd}"'
-        # Handle network
-        if network_mode:
-            service_config['network_mode'] = network_mode
-        # Handle GPU configuration
-        if resources:
-            service_config['deploy'] = {'resources': resources}
-        # Configure shared memory
-        if shm_size:
-            service_config['shm_size'] = shm_size
-        
-        # Handle port mappings
-        if self.server_exists(name):
-            self.kill(name)
-        
-        if port:
-            assert not m.port_used(port), f'Port {port} is already in use'
+        serve_config['deploy'] = {'resources': resources} if resources else {}
+        serve_config['shm_size'] = shm_size
+        if port != None:
             ports = {port: port}
-            service_config['ports'] = [f'{host}:{container}' for host, container in ports.items()]
-        # Handle volume mappings
+        if ports:
+            serve_config['ports'] = [f"{host_port}:{container_port}" for container_port, host_port in ports.items()] 
         if volumes:
             if isinstance(volumes, dict):
-                service_config['volumes'] = [f'{m.abspath(k)}:{v}' for k, v in volumes.items()]
+                volumes = [f'{k}:{v}' for k, v in volumes.items()] 
             elif isinstance(volumes, list):
-                service_config['volumes'] = volumes
-        # Handle environment variables
+                volumes = volumes
+            else:
+                volumes = []
+            serve_config['volumes'] = volumes
         if env:
-            if isinstance(env, dict):
-                env = [f"{k}={v}" for k,v in env.items()]
-            assert isinstance(env, list)
-            service_config['environment'] = env
-
-        service_config['working_dir'] = working_dir
-
-        if build: 
-            if isinstance(build, dict):
-                service_config['build'] = build
-            elif isinstance(build, bool) and build:
-                service_config['build'] = {'context': './', 'dockerfile': 'Dockerfile'}
-            elif isinstance(build, str):
-                service_config['build'] = {'context': build, 'dockerfile': 'Dockerfile'}
-            service_config['image'] = f'{name}:latest'
-        # Build the complete docker-compose configuration
-        compose_config = {
-            'services': {
-                name: service_config
-            }
-        }
-
-        # Add networks if needed
-        if network_mode and network_mode != 'host':
-            compose_config['networks'] = {
-                net: {
-                    'driver': 'bridge'
-                }
-            }
+            serve_config['environment'] = [f"{k}={v}" for k,v in env.items()] if env else []
+        serve_config['working_dir'] = working_dir
+        if build:
+            serve_config.pop('image', None)
+            serve_config['build'] = build
+        if cmd or entrypoint:
+            serve_config['entrypoint'] = f'bash -c "{cmd}"'
         # Write the docker-compose file
-        cwd = cwd or os.getcwd()
-        if compose_path is None:
-            compose_path = cwd + '/docker-compose.yml' 
-        compose_path = os.path.expanduser(compose_path)
-        if not os.path.exists(compose_path):
-            m.put_yaml(compose_path, compose_config)
-        # Run docker-compose
-        compose_cmd = ['sudo'] if sudo else []
-        compose_cmd.extend(['docker-compose', '-f', compose_path, 'up'])
-        # Run the container
-        print(f'Starting container {name} from image {image} on port {port}')
-        if bool(daemon):
-            compose_cmd.append('-d')
-        command_str = ' '.join(compose_cmd)
-        command_str = f'cd {cwd} && ' + command_str
-        try:
-            os.system(command_str)
-        except Exception as e:
-            print(f'Error running docker-compose: {e}')
-        # remove the compose file if not daemon
-        m.print(f'Compose file at ', compose_config)
-        os.remove(compose_path)
-        return  {'compose_file': compose_config['services'][name], 'cwd': cwd, 'name': name, 'status': 'running', 'command': command_str}
+        cwd = cwd or os.getcwd() 
+        
+        if compose_path == None:
+            compose_paths = self.compose_paths(name)
+            if len(compose_paths) > 0:
+                compose_path = compose_paths[0]    
+            else:
+                compose_path = cwd + '/docker-compose.yml' 
+        if os.path.exists(compose_path):
+            compose_config = m.get_yaml(compose_path)
+        else:
+            compose_config = {'version': '3.8', 'services': {}}
+        
+        if name in compose_config['services']:
+            compose_config['services'][name].update(serve_config)
+        else:
+            compose_config['services'][name] = serve_config
+        m.put_yaml(compose_path, compose_config)
+        compose_cmd = f'cd {cwd} && ' +  ' '.join(['docker-compose', '-f', compose_path, 'up'])
+        if daemon:
+            compose_cmd += ' -d'        
+        os.system(compose_cmd)
+        return compose_config
 
     def process_info(self, name):
         """ info of the process, the memory, cpu, etc"""
@@ -246,6 +202,18 @@ class PM:
                     dockerfiles.append(os.path.join(root, file))
         return dockerfiles
 
+    def compose_paths(self, mod='ipfs'):
+        """
+        List all docker-compose files in the specified path.
+        """
+        compose_files = []
+        path = m.dp(mod, relative=False)
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                if file.lower() in ['docker-compose.yml', 'docker-compose.yaml']:
+                    compose_files.append(os.path.join(root, file))
+        return compose_files
+
     def dockerfile(self, mod='mod'):
         path = self.dockerfile_path(mod)
         if path is None:
@@ -292,7 +260,6 @@ class PM:
         if os.path.isdir(path):
             assert os.path.exists(os.path.join(path, 'Dockerfile'))
         tag = tag or path.split('/')[-1]
-        print(f'Building Docker image from {path} with tag {tag}')
         cmd = f'docker build -t {tag} .'
         if no_cache:
             cmd += ' --no-cache'
@@ -596,68 +563,6 @@ class PM:
         """
         return self.kill(name)
 
-    def list(self, all: bool = False) -> pd.DataFrame:
-        """
-        List containers with detailed information (PM2-like interface).
-        """
-        try:
-            cmd = 'docker ps' if not all else 'docker ps -a'
-            output = m.cmd(cmd, verbose=False)
-            lines = output.split('\n')
-            
-            if len(lines) <= 1:
-                return pd.DataFrame()
-                
-            # Process headers
-            headers = []
-            current_pos = 0
-            header_line = lines[0]
-            
-            # Extract header positions
-            for i, char in enumerate(header_line):
-                if char.isupper() and (i == 0 or header_line[i-1].isspace()):
-                    if current_pos < i:
-                        header_end = i
-                        header_text = header_line[current_pos:header_end].strip()
-                        if header_text:
-                            headers.append((current_pos, header_text))
-                    current_pos = i
-            
-            # Add the last header
-            if current_pos < len(header_line):
-                headers.append((current_pos, header_line[current_pos:].strip()))
-            
-            # Extract header positions for parsing
-            header_positions = [pos for pos, _ in headers]
-            header_names = [name.lower().replace(' ', '_') for _, name in headers]
-            
-            # Parse data rows
-            data = []
-            for line in lines[1:]:
-                if not line.strip():
-                    continue
-                    
-                row = {}
-                for i in range(len(header_positions)):
-                    start = header_positions[i]
-                    end = header_positions[i+1] if i+1 < len(header_positions) else len(line)
-                    value = line[start:end].strip()
-                    row[header_names[i]] = value
-                
-                data.append(row)
-            
-            return pd.DataFrame(data)
-        except Exception as e:
-            m.print(f"Error listing containers: {e}", color='red')
-            return pd.DataFrame()
-
-    def monitor(self) -> pd.DataFrame:
-        """
-        Monitor containers (PM2-like interface).
-        """
-        return self.cstats(update=True)
-
-
     def get_port(self, name: str) -> Dict[int, int]:
         """
         Get the exposed ports of a container as a dictionary.
@@ -689,8 +594,7 @@ class PM:
             m.print(f"Error getting ports for container {container_name}: {e}", color='red')
             return {}
     
-
-    def namespace(self, search=None, max_age=None, update=True, **kwargs) -> dict:
+    def namespace(self, search=None, max_age=None, update=False, **kwargs) -> dict:
         """
         Get a list of unique namespaces from container names.
         """
@@ -738,7 +642,8 @@ class PM:
         List all docker-compose files in the specified path.
         """
         compose_files = []
-        path = m.dp(mod)
+        path = m.dp(mod, relative=False)
+        print(f'Searching for docker-compose files in {path} with depth {depth}')
         for root, dirs, files in os.walk(path):
             for file in files:
                 if file.lower() in ['docker-compose.yml', 'docker-compose.yaml']:
@@ -756,4 +661,6 @@ class PM:
         volumes = { p: self.convert_docker_path(p) for p in paths}
         module_path = m.dirpath(mod)
         volumes[module_path] = self.convert_docker_path(module_path)
+        # replace home path with ~/ in docker paths
+        volumes = {k.replace(m.home_path, '~'): v for k, v in volumes.items()}
         return volumes

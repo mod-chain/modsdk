@@ -135,16 +135,6 @@ export default function Modules() {
     return () => io.disconnect()
   }, [state.loading, state.hasMore, state.page, fetchPage])
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === '[') { e.preventDefault(); decCols() }
-      if (e.key === ']') { e.preventDefault(); incCols() }
-      if (e.key.toLowerCase() === 'r') { e.preventDefault(); fetchPage(1, false) }
-      if (e.key.toLowerCase() === 'c') { e.preventDefault(); setShowCreateForm(true) }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [fetchPage])
 
   const retry = () => fetchPage(Math.max(1, state.page), !!state.modules.length)
 
@@ -163,25 +153,6 @@ export default function Modules() {
                 <span className="ml-1">{searchTerm}</span>
               </>
             )}
-          </div>
-
-          <div className="hidden md:flex items-center gap-2">
-            <label className="text-xs text-green-400/70">density</label>
-            <button
-              aria-label="decrease columns"
-              onClick={decCols}
-              className="p-1 border border-green-600 rounded hover:bg-green-900/30"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <div className="px-2 tabular-nums">{maxCols}</div>
-            <button
-              aria-label="increase columns"
-              onClick={incCols}
-              className="p-1 border border-green-600 rounded hover:bg-green-900/30"
-            >
-              <ChevronRight size={16} />
-            </button>
           </div>
 
           <select

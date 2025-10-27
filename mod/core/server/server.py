@@ -322,8 +322,8 @@ class Server:
             m.sleep(trial_backoff)
         raise Exception(f'Failed to start {name} after {trials} trials')
 
-    def kill(self, name):
-        self.pm.kill(name)
+    def kill(self, name, *extra_mods):
+        self.pm.kill(name, *extra_mods)
 
     def kill_all(self):
         return self.pm.kill_all()

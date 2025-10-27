@@ -20,7 +20,7 @@ class Mod:
         "name": "mod",
         "version": "0.1.0",
         "desc": "A Python package for mod utilities",
-        "shortcuts": {'pm': 'server.pm'},
+        "shortcuts": {'pm': 'server.pm', 'local': 'server'},
         "routes": {},
         "expose" : ["forward", "info"],
         "port_range": [50050, 50150]
@@ -147,24 +147,8 @@ class Mod:
         return fn_obj(**params)
 
     def go(self, mod=None, **kwargs):
-        mod = mod or self.name
-        if os.path.exists(str(mod)): 
-            return self.cmd(f'code {mod}')
-
-        if self.mod_exists(mod):
-            path = self.dirpath(mod)
-        else:
-            repo2path = self.repo2path()
-            first_guess_path = self.abspath(f"{self.mods_path}/{mod.replace('.', '/')}")
-            if os.path.exists(first_guess_path):
-                path = first_guess_path
-            elif mod in repo2path:
-                path = repo2path[mod]
-            elif os.path.exists(mod):
-                path = mod
-            else:
-                raise Exception(f'{mod} not found')
-        assert os.path.exists(path), f'{path} does not exist'
+        path = self.dirpath(mod, relative=False)
+        assert os.path.exists(self.abspath(path)), f'{path} does not exist'
         return self.cmd(f'code {path}', **kwargs)
 
     def getfile(self, obj=None) -> str:
@@ -367,6 +351,7 @@ class Mod:
               avoid_terms = ['__pycache__', '.git', '.ipynb_checkpoints', 'node_mods', '/artifacts', 'egg-info'], 
               endswith:str = None,
               include_hidden:bool = False, 
+              always_include_terms = ['.gitignore', '.dockerignore'],
               relative = False, # relative to the current working directory
               startswith:str = None,
               **kwargs) -> List[str]:
@@ -377,7 +362,7 @@ class Mod:
         #     path = self.dirpath(path)
         files =self.glob(path, **kwargs)
         if not include_hidden:
-            files = [f for f in files if not '/.' in f]
+            files = [f for f in files if not '/.' in f ]
         files = list(filter(lambda f: not any([at in f for at in avoid_terms]), files))
         if len(files) == 0 and self.mod_exists(path):
             files = self.files(self.dp(path), relative=True)
@@ -419,9 +404,9 @@ class Mod:
     def utils(self, search=None):
         return self.get_utils(search=search)
 
-    def relpath(self, path:str, start:str=None) -> str:
-        start = start or os.getcwd()
-        return os.path.relpath(path, start=start)
+    def relpath(self, path:str = '~') -> str:
+        path = os.path.abspath(os.path.expanduser(path))
+        return path.replace(self.home_path, '~')
 
     def routes(self, obj=None):
         obj = obj or self
@@ -673,7 +658,10 @@ class Mod:
             expired =  (time.time() - float(timestamp)) > max_age
             if expired:
                 return default
-        return data['data']
+        if isinstance(data, dict) and 'data' in data:
+            return data['data']
+        else: 
+            return data
 
     def get_text(self, path: str, **kwargs ) -> str:
         # Get the absolute path of the file
@@ -845,49 +833,36 @@ class Mod:
         return mod2schema 
 
     def info(self, 
-            mod:str='mod',  # fam
-            schema = True,
-            keep_last_n : int = 10,
-            relative=True,
-            update: bool =False, 
-            key=None,
-            url = None, 
+            mod:str='mod',  # the mod to get the info of
+            schema = True, # whether to include the schema of the mod
+            fns  = True, # which functions to include in the schema
+            url = None, # whether to include the url of the mod
+            desc = False, # whether to include the description of the mod
+            key = None, # the key to sign the info with
             public =  False, # whether to include the source code of the mod
-            fns = None, # which functions to include in the schema
-            desc = False, 
-            tag_divider = '::',
             **kwargs):
         """
         Get the info of a mod, including its schema, key, cid, and code if specified.
         """
-        mod = self.get_name(mod or 'mod')
-        name = mod
-        if tag_divider in mod:
-            mod, tag = mod.split('::')
+        mod  =  self.get_name(mod or 'mod')
         cid = self.cid(mod)
         key = self.get_key(key or mod)
         info =  {
-                'name': name, 
+                'name': mod, 
                 'key': key.address,  
                 'cid': cid,
                 'time': time.time(),
                 'public': bool(public),
-                'dirpath': self.dirpath(mod),
+                'dirpath': self.dirpath(mod, relative=True),
                 }
         if public:
             info['content'] = self.content(mod)
         if schema:
-            try:
-                info['schema'] = self.schema(mod , public=public, fns=fns)
-            except Exception as e:
-                self.print(f'InfoSchemaError({e})', color='red')
-                info['schema'] = {}
-            fns = [fn for fn in info['schema'].keys()]
-        else: 
-            fns = self.fns(mod)
-        info['fns'] = fns
+            info['schema'] = self.schema(mod , public=public)
+        if fns:
+            info['fns'] = self.fns(mod)
         if url: 
-            info['url'] = url
+            info['url'] = self.namespace().get(mod, None)
         if desc:
             info['desc'] = self.desc(mod)
         info['signature'] = self.sign(info, key=key)
@@ -1301,20 +1276,20 @@ class Mod:
             class_obj_path = classes[-1]
             return self.obj(class_obj_path)
         else: 
-            tree = self.tree(folders=False)
-            k_options = [k for k in tree.keys() if path in k]
-            if len(k_options) >= 1:
-                return self.anchor_object(k_options[0])
-            raise Exception(f'No anchor file found in {path} or {k_options}')
+            tree = self.tree(folders=False, search=path)
+            if len(tree) >= 1:
+                return self.anchor_object(list(tree.values())[0])
+            raise Exception(f'No anchor file found in {path}')
         
     def get_tree(self, 
                 path:Optional[str]=None, 
                 search:Optional[str]=None, 
                 depth=10, 
                 root_names = ['mod'], 
-                avoid_terms = ['src', 'mods', '_mods'],
+                avoid_terms = ['src', 'mods', '_mods', 'core'],
                 avoid_prefixes = ['__', '_'],
                 avoid_suffixes = ['__', '/utils'],
+                ignore_suffixes = ['/src', '/core'],
                 folders:bool = True, 
                 update=False,  
                 **kwargs): 
@@ -1331,10 +1306,24 @@ class Mod:
                 paths = list(set([os.path.dirname(f) for f in paths]))
             tree = {self.get_path_name(f):f for f in paths}
             filter_k = lambda k: all(not k.startswith(prefix) for prefix in avoid_prefixes) and all(not k.endswith(suffix) for suffix in avoid_suffixes) and all(not term in k.split('.') for term in avoid_terms)
-            tree = {self.get_name(k):v for k,v in tree.items() if filter_k(k)}
+
+            def process_v(x):
+                for k in ignore_suffixes: 
+                    if x.endswith(k):
+                        x = x[:-len(k)]
+                x_list =  x.split('/')
+                if x_list[-1] == x_list[-2]: 
+                    x = '/'.join(x_list[:-1])
+                return x
+                    
+
+            tree = {self.get_name(k):process_v(v) for k,v in tree.items() if filter_k(k)}
+
+
             for k,v in self.shortcuts.items():
                 if v in tree:
                     tree[k] = tree[v]
+
             tree = dict(sorted(tree.items()))
             self._cached_trees[cache_key] = tree
 
@@ -1360,47 +1349,25 @@ class Mod:
             **self.core_tree(search=search, **kwargs),
                 }
 
-    def dirpath(self, mod=None) -> str:
+
+    def dirpath(self, mod=None, relative=True) -> str:
         """
         get the directory path of the mod
         """
+
         mod = self.get_name(mod)
         mod = self.shortcuts.get(mod, mod)
-        if mod in self.anchor_names:
-            return self.lib_path
-        else:
-            dirpath = None
-            possible_core_path = self.core_path + '/' + mod
-            possible_local_path = os.getcwd() + '/' + mod.replace('.', '/')
-            possible_mods_path = self.mods_path + '/' + mod.replace('.', '/')
-            possible_paths = [possible_core_path, possible_local_path, possible_mods_path]
-            for p in possible_paths:
-                if os.path.exists(p) and os.path.isdir(p):
-                    dirpath = p
-                    break
-            if dirpath == None:
-                tree = self.tree(folders=True)
-                if mod in tree:
-                    dirpath = tree[mod]
-                else: 
-                    key_options = [k for k in tree.keys() if mod in k]
-                    if len(key_options) >= 1:
-                        dirpath =  tree[key_options[0]]
-            # remove any trailing repeats of the mod name in the dirpath
-
-            def post_process(x, avoid_suffixes=[ '/src']):
-                # remove trailing repeats of the mod name in the dirpath
-                x = x or 'mod'
-                if len(x.split('/')) > 1:
-                    while x.split('/')[-1] == x.split('/')[-2]:
-                        x = '/'.join(x.split('/')[:-1])
-                for s in avoid_suffixes:
-                    if x.endswith(s):
-                        x = x[:-len(s)]
-                return x
-            return post_process(dirpath)
+        tree = self.tree( search=mod, folders=True)
+        if len(tree) >= 1: 
+            dirpath =  list(tree.values())[0]
+        else: 
+            raise Exception(f'Module {mod} not found')
+        # remove any trailing repeats of the mod name in the dirpath
+        return  dirpath
 
     dp = dirpath
+
+    
 
     def gitignore_path(self, path=None):
         path = path or self.lib_path
@@ -1423,7 +1390,16 @@ class Mod:
             self.put_text(gitignore_path, gitignore)
         return {'name': name, 'path': gitignore_mod_path, 'msg': 'Removed from .gitignore'}
 
-    def fork(self, base = 'base', name= 'base2', path=None, update=True, ):
+    def from_path(self, path, name=None, update=True):
+        assert os.path.exists(path), f'Path {path} does not exist'
+        path = self.abspath(path)
+        name = name or path.split('/')[-1]
+        dirpath = self.mods_path + '/' + name.replace('.', '/')
+        self.cmd(f'cp -r {path} {dirpath}')
+        files = self.files(dirpath, relative=True)
+        return {'name': name, 'path': dirpath, 'msg': 'Mod Created from path', 'files': files, 'cid': self.cid(name)}
+
+    def add_mod(self, base = 'base', name= 'base2', path=None, update=True, ):
         """
         make a new mod
         """
@@ -1451,7 +1427,7 @@ class Mod:
         assert not self.mod_exists(name), f'Fork removal failed: {name} still exists'
         return fork_info
     
-    create = new = add = addmod = fork
+    create = new = add = fork = add_mod 
 
     def urls(self, *args, **kwargs):
         return self.fn('pm/urls')(*args, **kwargs)

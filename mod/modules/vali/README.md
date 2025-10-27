@@ -26,7 +26,7 @@ pip install commune
 ## Quick Start
 
 ```python
-import commune as c
+import mod as c
 from commune.vali import Vali
 
 # Create a validator with a custom scoring function
@@ -157,7 +157,7 @@ print(results)
 
 ## Storage and Persistence
 
-Vali stores module evaluation results in a configurable storage path. By default, this is in the commune storage directory under `/vali/{network}/{subnet}`.
+Vali stores module evaluation results in a configurable storage path. By default, this is in the mod storage directory under `/vali/{network}/{subnet}`.
 
 ```python
 # Get the path where module data is stored

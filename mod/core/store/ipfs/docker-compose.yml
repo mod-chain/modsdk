@@ -1,14 +1,55 @@
+networks:
+  default:
+    driver: bridge
 services:
   ipfs:
-    container_name: ipfs_node
-    image: ipfs/go-ipfs:latest
+    container_name: ipfs
+    deploy: {}
+    entrypoint: bash -c "m serve port=50063 key=ipfs remote=0 mod=ipfs"
+    environment:
+    - IPFS_API_URL=http://ipfs_node:5001/api/v0
+    extra_hosts:
+    - 0.0.0.0:host-gateway
+    image: mod:latest
     ports:
-      - "5001:5001"
-      - "4001:4001"
-      - "8080:8080"
-    volumes:
-      - ~/.ipfs/archive:/data/ipfs
-      - ~/.ipfs/data:/data/ipfs
-      
+    - 50063:50063
     restart: unless-stopped
-    
+    shm_size: 100g
+    volumes:
+    - ~/mod:/root/mod
+    - ~/.mod/server:/root/.mod/server
+    - ~/.mod/key/ipfs:/root/.mod/key/ipfs
+    - ~/.mod/ipfs:/root/.mod/ipfs
+    - ~/mod/mod/core/store/ipfs:/root/mod/mod/core/store/ipfs
+    working_dir: /root/mod/mod/core/store/ipfs
+  ipfs_node:
+    container_name: ipfs_node
+    extra_hosts:
+    - 0.0.0.0:host-gateway
+    image: ipfs/go-ipfs:latest
+    networks:
+    - default
+    ports:
+    - 5001:5001
+    - 4001:4001
+    - 8080:8080
+    restart: unless-stopped
+    volumes:
+    - ~/.ipfs/archive:/data/ipfs
+    - ~/.ipfs/data:/data/ipfs
+  mod:
+    container_name: mod
+    deploy: {}
+    entrypoint: bash -c "m serve port=50140 key=server remote=0 mod=mod"
+    image: mod:latest
+    ports:
+    - 50140:50140
+    restart: unless-stopped
+    shm_size: 100g
+    volumes:
+    - ~/mod:/root/mod
+    - ~/.mod/server:/root/.mod/server
+    - ~/.mod/key/server:/root/.mod/key/server
+    - ~/.mod/mod:/root/.mod/mod
+    - ~/mod/mod/core:/root/mod/mod/core
+    working_dir: /root/mod/mod/core

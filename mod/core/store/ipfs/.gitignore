@@ -11,7 +11,7 @@ test.db
 **/__archive__
 **/.archive/
 **/__pycache__
-
+# fam
 # Logs and temporary files
 logs/
 *.log

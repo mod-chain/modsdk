@@ -7,11 +7,37 @@ import time
 import mod as m
 
 class  IpfsClient:
+
+
+    endpoints = ['pin', 'add_mod', 'reg', 'mod', 'pins']
     """Simple IPFS client using requests library only."""
-    
-    def __init__(self, host: str = "127.0.0.1", port: int = 5001, protocol: str = "http"):
-        self.base_url = f"{protocol}://{host}:{port}/api/v0"
+    host_options = ['0.0.0.0', 'ipfs_node']
+    def __init__(self, url: str = None):
+        if url is None:
+            for host in self.host_options:
+                url = f"http://{host}:5001/api/v0"
+                try:
+                    response = requests.post(f"{url}/id", timeout=2)
+                    if response.status_code == 200:
+                        break
+                except requests.exceptions.RequestException:
+                    print(f"Could not connect to IPFS node at {url}")
+        self.url = url 
         self.session = requests.Session()
+        
+    def test_connection(self) -> bool:
+        """Test connection to the IPFS node.
+        
+        Returns:
+            True if connection is successful, False otherwise
+        """
+        try:
+            response = self.session.post(f"{self.url}/id", timeout=5)
+            response.raise_for_status()
+            return True
+        except requests.exceptions.RequestException as e:
+            print(f"Connection test failed: {e}")
+            return False
     
     def add_file(self, file_path: str) -> Dict[str, Any]:
         """Add a single file to IPFS.
@@ -22,7 +48,7 @@ class  IpfsClient:
         Returns:
             Dictionary with IPFS hash and other metadata
         """
-        url = f"{self.base_url}/add"
+        url = f"{self.url}/add"
         
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"File not found: {file_path}")
@@ -33,7 +59,7 @@ class  IpfsClient:
             response.raise_for_status()
             return response.json()
 
-    def add_data(self, data: Dict[str, Any] = None, pin=False) -> Dict[str, Any]:
+    def add_data(self, data: Dict[str, Any] = None, pin=True) -> Dict[str, Any]:
         """Add a JSON object to IPFS.
         
         Args:
@@ -42,7 +68,7 @@ class  IpfsClient:
         Returns:
             Dictionary with IPFS hash and other metadata
         """
-        url = f"{self.base_url}/add"
+        url = f"{self.url}/add"
         json_str = json.dumps(data)
         files = {'file': ('data.json', json_str)}
         response = self.session.post(url, files=files)
@@ -52,6 +78,16 @@ class  IpfsClient:
             print(f"Pinning data with CID: {cid}")
             self.pin_add(cid)
         return cid
+
+    def rm_data(self, ipfs_hash: str) -> Dict[str, Any]:
+        """Remove a JSON object from IPFS by its hash.
+        
+        Args:
+            ipfs_hash: IPFS hash of the JSON object
+        Returns:
+            Dictionary with removal status
+        """
+        return self.pin_rm(ipfs_hash)
 
 
     def get_data(self, ipfs_hash: str) -> Dict[str, Any]:
@@ -65,61 +101,106 @@ class  IpfsClient:
         content = self.get_file(ipfs_hash)
         return json.loads(content)
 
-    def pin_mod(self, mod: m.Mod='store', pin=True) -> Dict[str, Any]:
-        """Pin a mod Mod to IPFS.
+    def mod(self, mod: m.Mod='store', pin=True) -> Dict[str, Any]:
+        """Add a mod Mod to IPFS.
         
         Args:
             mod: Commune Mod object
             
         Returns:
-            Dictionary with pin status
+            Dictionary with IPFS hash and other metadata
         """
-        file2cid = {}
-        content = m.content(mod)
-        for file,content in content.items():
-            cid = self.add_data(content, pin=pin)
-            file2cid[file] = cid
-        print(f"Pinning mod from dirpath: {file2cid} to IPFS")
-        mod_cid = self.add_data(file2cid, pin=pin)
-        return mod_cid
+        cid = self.mod2cid().get(mod, mod)
+        return self.get_data(cid) if cid else None
 
-    def get_mod(self, ipfs_hash: str) -> Dict[str, Any]:
-        """Retrieve a mod Mod from IPFS by its hash.
+    def mod_content(self, mod: m.Mod='store') -> Dict[str, Any]:
+        """Retrieve a mod Mod from IPFS by its name.
         
         Args:
-            ipfs_hash: IPFS hash of the Mod
+            mod: Commune Mod object
         Returns:
+
             Mod content as dictionary
         """
-        file2cid = self.get_data(ipfs_hash)
-        file2content = {}
-        for file,cid in file2cid.items():
-            file2content[file] = self.get_data(cid)
-        return file2content
+        mod_info = self.mod(mod)
+        mod_content = {}
+        for file,file_cid in self.get_data(mod_info['content']).items():
+            mod_content[file] = self.get_data(file_cid)
+        return mod_content
     
+    mod2cid_path = '~/.ipfs/mods.json'
+    # Register or update a mod in IPFS
 
-    def reg(self, mod = 'store', key=None, comment=None, update=False) -> Dict[str, Any]:
-        # het =wefeererwfwefhuwoefhiuhuihewds wfweferfgr
-        path = f'~/.ipfs/mods/{mod}'
-        cid = self.add_mod(mod)
+    def reg(self, mod = 'store', key=None, comment=None, update=False, branch='main') -> Dict[str, Any]:
+        # het =wefeererwfwefhuwoefhiuhuihewds wfweferfgr frff frrefeh fff
         current_time = m.time()
-        default = {'history': [],  'created':  current_time,  'updated': current_time}
-        info = m.get(path, None, update=update)
-        if info is None:
-            info = default
-        if len(info['history']) == 0:
-            info['created'] = current_time
-        prev_cid = info['history'][-1]['cid'] if len(info['history']) > 0 else None
-        if cid != prev_cid:
-            info['history'].append({'cid': cid, 'time': current_time})
-            info['updated'] = current_time
-            print(f"Registering mod {mod} with CID {cid} at time {current_time}")
-            if comment:
-                info['history'][-1]['comment'] = comment
-            m.put(path, info)
+        key = m.key(key)
+        mod2cid = m.get(self.mod2cid_path, {}, update=update)
+        prev = mod2cid.get(mod, None)
+        cid = self.add_mod(mod)
+        if prev is None:
+           info = {
+                   'content': cid,
+                   'prev': None, # previous state
+                   'name': mod,
+                   'created':  current_time,  # created timestamp
+                   'updated': current_time, 
+                   'key': key.address, 
+                   'nonce': 1 # noncf
+                   }
+        # fam
+        else:
+            info = self.get_data(prev)
+            if info['content'] != cid:
+                info['prev'] = prev # previous state
+                info['content'] = cid
+                info['nonce'] = info['nonce'] + 1
+                info['updated'] = current_time
+        info['signature'] = key.sign(info, mode='str')
+        mod2cid[mod] = self.add_data(info)
+        m.put(self.mod2cid_path, mod2cid)
+        return info # fam fdffffffjferfejrfjoijiojhwefefijh
 
-        return info
+    def history(self, mod='store', features=['content', 'updated']):
 
+        history = []
+        info = self.mod(mod)
+        while True:
+            prev = info['prev']
+            nonce = info['nonce']
+            history.append(info)
+            if prev == None:
+                break
+            info = self.mod(info['prev'])
+        df =  m.df(history)[features]
+        return df
+
+    def diff(self, mod = 'store', update=False) -> Dict[str, Any]:
+        mod = self.mod(mod)
+        prev = mod.get('prev', None)
+        print(f"Getting diff for mod: {mod}, prev: {prev}")
+        prev_content = self.get_data(self.mod(prev)['content'])
+        print(prev_content)
+        current_content = self.get_data(mod['content'])
+        diffs = {}
+        for file in set(list(prev_content.keys()) + list(current_content.keys())):
+            prev_file_content = prev_content.get(file, None)
+            current_file_content = current_content.get(file, None)
+            if prev_file_content != current_file_content:
+                diffs[file] = {
+                    'previous': prev_file_content,
+                    'current': current_file_content
+                }
+            
+        return diffs
+        
+        
+
+    def mod2cid(self, update=False) -> Dict[str, str]:
+        return m.get(self.mod2cid_path, {}, update=update)
+
+    def mods(self):
+        return m.ls('~/.ipfs/mods/')
 
     def add_mod(self, mod: m.Mod) -> Dict[str, Any]:
         """Add a mod Mod to IPFS.
@@ -137,8 +218,6 @@ class  IpfsClient:
             cid = self.add_data(content, pin=True)
             file2cid[file] = cid
             print(f"Added file: {file} with CID: {cid}")
-
-            
         return self.add_data(file2cid)
 
 
@@ -166,7 +245,7 @@ class  IpfsClient:
         Returns:
             File content as bytes
         """
-        url = f"{self.base_url}/cat"
+        url = f"{self.url}/cat"
         params = {'arg': ipfs_hash}
         response = self.session.post(url, params=params)
         response.raise_for_status()
@@ -182,7 +261,7 @@ class  IpfsClient:
         Returns:
             List of dictionaries with IPFS hashes for each file
         """
-        url = f"{self.base_url}/add"
+        url = f"{self.url}/add"
         
         if not os.path.exists(folder_path):
             raise FileNotFoundError(f"Folder not found: {folder_path}")
@@ -244,7 +323,7 @@ class  IpfsClient:
         Returns:
             Dictionary with folder metadata
         """
-        url = f"{self.base_url}/ls"
+        url = f"{self.url}/ls"
         params = {'arg': ipfs_hash}
         response = self.session.post(url, params=params)
         response.raise_for_status()
@@ -266,7 +345,7 @@ class  IpfsClient:
         Returns:
             Content as bytes
         """
-        url = f"{self.base_url}/cat"
+        url = f"{self.url}/cat"
         params = {'arg': ipfs_hash}
         response = self.session.post(url, params=params)
         response.raise_for_status()
@@ -284,7 +363,7 @@ class  IpfsClient:
             Dictionary with unpin status
 
         """
-        url = f"{self.base_url}/pin/rm"
+        url = f"{self.url}/pin/rm"
         params = {'arg': ipfs_hash}
         response = self.session.post(url, params=params)
         response.raise_for_status()
@@ -311,7 +390,7 @@ class  IpfsClient:
         Returns:
             Dictionary with pin status
         """
-        url = f"{self.base_url}/pin/add"
+        url = f"{self.url}/pin/add"
         params = {'arg': ipfs_hash}
         response = self.session.post(url, params=params)
         response.raise_for_status()
@@ -323,7 +402,7 @@ class  IpfsClient:
         Returns:
             Dictionary with pinned content
         """
-        url = f"{self.base_url}/pin/ls"
+        url = f"{self.url}/pin/ls"
         response = self.session.post(url)
         response.raise_for_status()
         if cid:
@@ -340,11 +419,21 @@ class  IpfsClient:
         Returns:
             Dictionary with unpin status
         """
-        url = f"{self.base_url}/pin/rm"
+        url = f"{self.url}/pin/rm"
         params = {'arg': ipfs_hash}
         response = self.session.post(url, params=params)
         response.raise_for_status()
         return response.json()
+
+    def _rm_all_pins(self) -> None:
+        """Unpin all content from local IPFS node."""
+        pins = self.pins()
+        for cid in pins.get('Keys', {}).keys():
+            print( f"Unpinning CID: {cid}")
+            try:
+                self.pin_rm(cid)
+            except Exception as e:
+                print(f"Error unpinning {cid}: {e}")
     
     def id(self) -> Dict[str, Any]:
         """Get IPFS node identity information.
@@ -352,7 +441,7 @@ class  IpfsClient:
         Returns:
             Dictionary with node ID and addresses
         """
-        url = f"{self.base_url}/id"
+        url = f"{self.url}/id"
         response = self.session.post(url)
         response.raise_for_status()
         return response.json()
@@ -363,13 +452,13 @@ class  IpfsClient:
         Returns:
             Dictionary with version details
         """
-        url = f"{self.base_url}/version"
+        url = f"{self.url}/version"
         response = self.session.post(url)
         response.raise_for_status()
         return response.json()
 
     def start_node(self) -> None:
-        """Start the IPFS node if it's not running."""
+    
         # This is a placeholder implementation.
         # Actual implementation would depend on the environment and setup.
         dirpath = Path(__file__).parent.parent
@@ -403,17 +492,12 @@ class  IpfsClient:
             True if test is successful, False otherwise
         """
         print("Testing IPFS mod connection...", mod)
-        add_result = self.add_mod(mod)
-        ipfs_hash = add_result
-        retrieved_mod = self.get_mod(ipfs_hash)
+        info = self.reg(mod)
+        mod_file2cid = self.mod(info['content'])
         original_file2cid = self.file2cid(mod)
-        new_file2cid = {}
-        for file,content in retrieved_mod.items():
-            cid = self.add_data(content)
-            new_file2cid[file] = cid
+        for file,cid in mod_file2cid.items():
             assert original_file2cid[file] == cid, f"CID mismatch for file {file}: {original_file2cid[file]} != {cid}"
-        return original_file2cid == new_file2cid
-
+        return True
 
     def test_data(self) -> bool:
         """Test connection to IPFS node by adding and retrieving test data.

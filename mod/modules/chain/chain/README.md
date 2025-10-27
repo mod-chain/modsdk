@@ -19,8 +19,8 @@ This module provides a Python interface for interacting with Substrate-based blo
 ## Installation
 
 ```bash
-git clone https://github.com/mod-ai/mod.git 
-pip install -e ./mod
+git clone https://github.com/commune-ai/commune.git 
+pip install -e ./commune
 ```
 
 ## Usage

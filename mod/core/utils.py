@@ -1732,6 +1732,7 @@ def put_yaml( path:str,  data: dict) -> Dict:
     '''
     Loads a yaml file
     '''
+    path = os.path.abspath(os.path.expanduser(path))
     dirpath = os.path.dirname(path)
     if not os.path.exists(dirpath):
         os.makedirs(dirpath, exist_ok=True)

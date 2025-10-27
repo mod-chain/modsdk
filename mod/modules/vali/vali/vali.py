@@ -5,7 +5,7 @@ from typing import *
 import inspect
 from copy import deepcopy
 
-import commune as c
+import mod as c
 print = c.print
 class Vali:
     endpoints = ['score', 'scoreboard']
@@ -127,13 +127,10 @@ class Vali:
         module['time'] = c.time()
         module['duration'] = c.time() - t0
         module['proof'] = self.auth.headers(module, key=self.key)
-        self.save_result(module) # save the module interaction
-        return module
-
-    def save_result(self, module: Union[str, dict]):
         self.verify_proof(module) # verify the proof
         path = self.get_module_path(module['key'])
         c.put_json(path, module)
+        return module
 
     def get_module_path(self, module:str):
         return self.storage_path + '/' + module + '.json'
@@ -157,6 +154,7 @@ class Vali:
         num_batches = len(batches)
         results = []
         filter_result = lambda x: isinstance(x, dict) and 'score' in x and x['score'] > 0
+        print(batches)
         print(f'Modules to evaluate: {batches}')
         for i, batch in enumerate(batches):
             futures = []
