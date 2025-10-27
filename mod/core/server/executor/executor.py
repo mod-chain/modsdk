@@ -69,7 +69,6 @@ class Executor:
                 path:str=None) -> Future:
         
         params = params or {}
-        print(params, 'fammmm')
         # check if the queue is full and if so, raise an exception
         if self.task_queue.full():
             if wait:

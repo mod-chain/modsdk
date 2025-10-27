@@ -68,6 +68,7 @@ class Vali:
         self.net = c.mod(self.network)() 
         # create some extra helper mappings
         self.mods = self.net.mods(search=search,  update=update)
+        print(f'NETWORK({self.network}) FOUND {len(self.mods)} MODULES', color='green')
         self.namespace = {m['name']: m['url'] for m in self.mods if 'name' in m and 'url' in m}
         self.key2module = {m['key']: m for m in self.mods if 'key' in m}
         self.name2module = {m['name']: m for m in self.mods if 'name' in m}
@@ -154,8 +155,6 @@ class Vali:
         num_batches = len(batches)
         results = []
         filter_result = lambda x: isinstance(x, dict) and 'score' in x and x['score'] > 0
-        print(batches)
-        print(f'Modules to evaluate: {batches}')
         for i, batch in enumerate(batches):
             futures = []
             for m in batch:

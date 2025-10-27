@@ -752,8 +752,8 @@ class Mod:
             obj = self.mod(obj)
         return  inspect.getsource(obj)
         
-    def call(self, *args, **kwargs): 
-        return self.fn('client/forward')(*args, **kwargs)
+    def call(self, fn , params=None, **kwargs): 
+        return self.fn('client/forward')(fn, params, **kwargs)
     
     def content(self, mod = None , search=None, ignore_folders = ['mods', 'mods'], relative=False,  **kwargs) ->  Dict[str, str]:
         """
@@ -897,24 +897,14 @@ class Mod:
     def submit(self, 
                 fn, 
                 params = None,
-                kwargs: dict = None, 
-                args:list = None, 
                 timeout:int = 40, 
                 mod: str = None,
                 mode:str='thread',
                 max_workers : int = 100,
                 ):
         executor = self.executor(mode=mode, max_workers=max_workers)
-        args = args or []
-        kwargs = kwargs or {}
-        if isinstance(params, dict):
-            kwargs = params
-            params = None
-        elif isinstance(params, list):
-            args = params
-            params = None
         if mode == 'thread':
-            future = executor.submit(self.fn(fn), params={'args': args, 'kwargs':kwargs}, timeout=timeout)
+            future = executor.submit(self.fn(fn), params=params, timeout=timeout)
         else:
             future =  executor.submit(self.fn(fn), *args, **kwargs)
         return future 
@@ -1358,7 +1348,9 @@ class Mod:
         mod = self.get_name(mod)
         mod = self.shortcuts.get(mod, mod)
         tree = self.tree( search=mod, folders=True)
-        if len(tree) >= 1: 
+        if mod in tree:
+            dirpath = tree[mod]
+        elif len(tree) >= 1: 
             dirpath =  list(tree.values())[0]
         else: 
             raise Exception(f'Module {mod} not found')

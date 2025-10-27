@@ -12,10 +12,12 @@ class Client:
                  key : Optional[str]= None,  
                  timeout = 10,
                  auth = 'server.auth',
+                 mode = 'http',
                  storage_path = '~/.mod/client',
                  fn = 'info',
                  **kwargs):
         self.url = url
+        self.mode = mode
         self.auth = m.mod(auth)()
         self.key  = m.get_key(key)
         self.store = m.mod('store')(storage_path)
@@ -30,16 +32,14 @@ class Client:
                 params: Optional[Union[list, dict]] = {}, # if you want to pass params as a list or dict
                 timeout:int=None,  # the timeout for the request
                 key : str = None,  # the key to use for the request
-                mode: str  = 'http', # the mode of the request
                 cost=0,
-                url = None,
                 update_info: bool = False, # whether to update the info from the server
                 **extra_kwargs 
     ):
 
 
         # step 2 : get the key
-        url = self.get_url( url=url, fn=fn, mode=mode)
+        url = self.get_url( fn=fn)
         key = self.get_key(key)
         fn = url.split('/')[-2]
         m.print(f'Client({url} key={key.name})', color='yellow')
@@ -58,6 +58,7 @@ class Client:
     def post(self, url,  params=None, headers=None, timeout=None, stream=True):
         # step 5: make the request
         timeout = timeout or self.timeout
+
         with requests.Session() as conn:
             response = conn.post( url, json=params,  headers=headers, timeout=timeout, stream=stream)
 
@@ -85,27 +86,19 @@ class Client:
             key = m.get_key(key)
         return key
 
-    def get_url(self, url=None, fn='info', mode='http'):
+    def get_url(self, fn='info'):
         """
         gets the url and makes sure its legit
         """
-
         if '/' in str(fn):
             url, fn = '/'.join(fn.split('/')[:-1]), fn.split('/')[-1]
             if len(fn) == 0:
                 fn = self.fn
-        elif self.url is None:
-            url = fn
-            fn = self.fn
-        url = url or self.url
-        # step 1: get the url and fn
-        if m.is_url(url):
-            url = url
-        elif m.is_int(url):
-            url = f'0.0.0.0:{url}'
+        else: 
+            url = self.url
         url = self.namespace.get(str(url), url)
-        if not url.startswith(mode):
-            url = f'{mode}://{url}'
+        if not url.startswith(self.mode):
+            url = f'{self.mode}://{url}'
         return url + '/' + fn + '/'
 
     call = forward

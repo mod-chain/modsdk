@@ -204,6 +204,9 @@ class Server:
         path = f'results/{mod}/{fn}/{user}'
         return len( self.store.paths(path)) 
 
+    def call(self, fn , params=None, **kwargs): 
+        return self.fn('client/forward')(fn, params, **kwargs)
+    
     def role(self, user) -> str:
         """
         get the role of the address ( owner, local, public)
