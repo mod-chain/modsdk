@@ -50,26 +50,7 @@ export default function Users() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-zinc-950 to-black text-white flex flex-col">
-      {/* Header */}
-      <div className="sticky top-0 z-40 border-b border-white/[0.08] bg-black/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-500 shadow-[0_8px_16px_rgba(139,92,246,0.3)]">
-              <UsersIcon className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-purple-200">
-                Users
-              </h1>
-              {!state.loading && state.n > 0 && (
-                <p className="text-sm text-white/50 mt-1">
-                  {state.n} {state.n === 1 ? 'user' : 'users'} found
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+
 
       {/* Error message */}
       {state.error && (

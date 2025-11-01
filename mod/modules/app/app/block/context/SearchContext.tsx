@@ -1,73 +1,47 @@
 'use client'
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react'
-import { SearchFilters } from '@/app/search/ModSearch'
+
+import React, { createContext, useContext, useState, ReactNode } from 'react'
+
+interface SearchFilters {
+  searchTerm: string
+  page?: number
+  pageSize?: number
+}
 
 interface SearchContextType {
   searchFilters: SearchFilters
   setSearchFilters: (filters: SearchFilters) => void
-  updateSearchFilters: (updates: Partial<SearchFilters>) => void
-  clearSearchFilters: () => void
-  isSearchActive: boolean
+  handleSearch: (term: string) => void
 }
 
 const SearchContext = createContext<SearchContextType | undefined>(undefined)
 
-export const useSearchContext = () => {
-  const context = useContext(SearchContext)
-  if (!context) {
-    throw new Error('useSearchContext must be used within a SearchProvider')
-  }
-  return context
-}
-
-interface SearchProviderProps {
-  children: ReactNode
-}
-
-export const SearchProvider = ({ children }: SearchProviderProps) => {
+export function SearchProvider({ children }: { children: ReactNode }) {
   const [searchFilters, setSearchFilters] = useState<SearchFilters>({
     searchTerm: '',
-    includeTags: [],
-    excludeTags: [],
-    includeTerms: [],
-    excludeTerms: [],
     page: 1,
     pageSize: 20
   })
 
-  const updateSearchFilters = useCallback((updates: Partial<SearchFilters>) => {
-    setSearchFilters(prev => ({ ...prev, ...updates }))
-  }, [])
-
-  const clearSearchFilters = useCallback(() => {
-    setSearchFilters({
-      searchTerm: '',
-      includeTags: [],
-      excludeTags: [],
-      includeTerms: [],
-      excludeTerms: [],
-      page: 1,
-      pageSize: 20
-    })
-  }, [])
-
-  const isSearchActive = searchFilters.searchTerm.length > 0 ||
-    searchFilters.includeTags.length > 0 ||
-    searchFilters.excludeTags.length > 0 ||
-    searchFilters.includeTerms.length > 0 ||
-    searchFilters.excludeTerms.length > 0
+  const handleSearch = (term: string) => {
+    setSearchFilters(prev => ({
+      ...prev,
+      searchTerm: term,
+      page: 1
+    }))
+  }
 
   return (
-    <SearchContext.Provider
-      value={{
-        searchFilters,
-        setSearchFilters,
-        updateSearchFilters,
-        clearSearchFilters,
-        isSearchActive
-      }}
-    >
+    <SearchContext.Provider value={{ searchFilters, setSearchFilters, handleSearch }}>
       {children}
     </SearchContext.Provider>
   )
+}
+
+export function useSearchContext() {
+  const context = useContext(SearchContext)
+  if (!context) {
+    throw new Error('useSearchContext must be used within SearchProvider')
+  }
+  return context
 }

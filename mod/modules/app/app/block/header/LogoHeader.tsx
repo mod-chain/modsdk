@@ -4,24 +4,14 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { CubeIcon } from '@heroicons/react/24/solid'
 
-interface LogoHeaderProps {
-  onToggleSidebar?: () => void
-}
-
-export const LogoHeader = ({ onToggleSidebar }: LogoHeaderProps) => {
+export const LogoHeader = () => {
     const router = useRouter()
     const moduleColor = '#10b981'
     
     return (
     <div className="relative w-10 h-10 flex-shrink-0 cursor-pointer z-50">
               <motion.div 
-                onClick={() => {
-                  if (onToggleSidebar) {
-                    onToggleSidebar()
-                  } else {
-                    router.push('/mods')
-                  }
-                }}
+                onClick={() => router.push('/mods')}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.8 }}
                 transition={{ duration: 0.2 }}

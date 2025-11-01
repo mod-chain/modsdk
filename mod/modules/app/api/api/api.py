@@ -171,14 +171,17 @@ class  Api:
         return diffs
         
     def registry(self,  key=None, search=None, update=False) -> Dict[str, str]:
-        registry =  m.get(self.registry_path, {}, update=update)
+        user2registry =  m.get(self.registry_path, {}, update=update)
+        filter_registry = lambda r: {k:v for k,v in r.items() if (search == None or search in k)}
         if key == 'all':
+            registry = {}
+            for user, user_registry in user2registry.items():
+                registry[user] = filter_registry(user_registry)
             return registry
-        key = self.get_address(key)
-        registry = registry.get(key, registry) if key else registry
-        if search: 
-            registry = {k:v for k,v in registry.items() if search in k }
-        return registry
+        else:
+            registry = user2registry.get(self.get_address(key), {})
+            registry = filter_registry(registry)
+            return registry
     def all_registry(self, update=False) -> Dict[str, Any]:
         registry =  m.get(self.registry_path, {}, update=update)
         return registry

@@ -42,6 +42,7 @@ export default function Modules() {
     setError(null)
     try {
       const params = searchTerm ? { search: searchTerm } : {}
+      console.log('Fetching modules with params:', params)
       const raw = (await client.call('mods', params)) as ModuleType[]
       const sorted = Array.isArray(raw) ? sortModules(raw) : []
       setMods(sorted)
@@ -58,36 +59,6 @@ export default function Modules() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/95 backdrop-blur-xl">
-        <div className="mx-auto max-w-4xl px-6 py-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-green-500/20 to-blue-500/20 rounded-xl border border-white/10">
-                <Sparkles className="w-6 h-6 text-green-400" />
-              </div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">Modules</h1>
-            </div>
-            <div className="flex items-center gap-3">
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value as SortKey)}
-                className="bg-white/5 border border-white/10 text-white/90 px-4 py-2 rounded-xl text-sm hover:bg-white/10 hover:border-white/20 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all cursor-pointer font-medium"
-              >
-                <option value="recent">Recent</option>
-                <option value="name">Name</option>
-                <option value="author">Author</option>
-              </select>
-            </div>
-          </div>
-
-          {searchTerm && (
-            <div className="mt-3 px-4 py-2 bg-white/5 border border-white/10 rounded-xl inline-block">
-              <span className="text-sm text-white/50">Searching for </span>
-              <span className="text-sm text-white font-semibold">"{searchTerm}"</span>
-            </div>
-          )}
-        </div>
-      </header>
 
       {error && (
         <div className="mx-auto max-w-4xl px-6 mt-6">

@@ -1,61 +1,66 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { Home, Package, Info, Globe, ChevronLeft, ChevronRight, Search, User, Chat, Documents  } from 'lucide-react'
 
-interface NavItem {
-  icon: any
-  label: string
-  href: string
-}
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { KeyIcon, UsersIcon } from '@heroicons/react/24/outline'
+import { motion } from 'framer-motion'
 
-interface SidebarProps {
-  isExpanded: boolean
-  onToggleExpand: () => void
-}
-
-const NAV_ITEMS: NavItem[] = [
-  { icon: Globe, label: 'MODULES', href: '/mods' },
-  { icon: User, label: 'USERS', href: '/users' },
+const navigation = [
+  { name: 'Keys', href: '/mods', icon: KeyIcon },
+  { name: 'Users', href: '/users', icon: UsersIcon },
 ]
 
-export const Sidebar = ({ isExpanded, onToggleExpand }: SidebarProps) => {
-  return (
-    <div 
-      className={`fixed left-0 top-0 h-full bg-black border-r border-green-500 z-40 transition-all duration-300 ${
-        isExpanded ? 'w-64' : 'w-16'
-      }`}
-    >
-      <button
-        onClick={onToggleExpand}
-        className="absolute -right-3 top-20 bg-black border border-green-500 rounded-full p-1 hover:bg-green-500 hover:text-black transition-colors z-10"
-      >
-        {isExpanded ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
-      </button>
+export function Sidebar() {
+  const pathname = usePathname()
 
-      <nav className="p-4 mt-20">
-        <ul className="space-y-4">
-          {NAV_ITEMS.map((item, index) => {
-            const Icon = item.icon
-            return (
-              <li key={`${item.href}-${index}`}>
-                <a 
-                  href={item.href} 
-                  className="flex items-center gap-3 text-green-500 hover:text-green-400 font-mono uppercase transition-colors"
-                >
-                  <Icon size={20} className="flex-shrink-0" />
-                  {isExpanded && (
-                    <span className="transition-opacity duration-300">
-                      {item.label}
-                    </span>
-                  )}
-                </a>
-              </li>
-            )
-          })}
-        </ul>
-      </nav>
+  return (
+    <div className="flex h-full w-64 flex-col border-r border-white/10 bg-black">
+      <div className="flex flex-1 flex-col gap-y-5 overflow-y-auto px-6 pb-4">
+        <div className="flex h-16 shrink-0 items-center">
+          <Link href="/" className="text-2xl font-bold text-white hover:text-green-400 transition-colors">
+            dhub
+          </Link>
+        </div>
+        <nav className="flex flex-1 flex-col">
+          <ul role="list" className="flex flex-1 flex-col gap-y-7">
+            <li>
+              <ul role="list" className="-mx-2 space-y-1">
+                {navigation.map((item) => {
+                  const isActive = pathname === item.href
+                  return (
+                    <li key={item.name}>
+                      <Link
+                        href={item.href}
+                        className={`group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold transition-all ${
+                          isActive
+                            ? 'bg-green-500/10 text-green-400'
+                            : 'text-gray-400 hover:text-white hover:bg-white/5'
+                        }`}
+                      >
+                        <item.icon
+                          className={`h-6 w-6 shrink-0 ${
+                            isActive ? 'text-green-400' : 'text-gray-400 group-hover:text-white'
+                          }`}
+                          aria-hidden="true"
+                        />
+                        {item.name}
+                        {isActive && (
+                          <motion.div
+                            layoutId="activeNav"
+                            className="absolute inset-0 bg-green-500/10 rounded-md"
+                            initial={false}
+                            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                          />
+                        )}
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
+            </li>
+          </ul>
+        </nav>
+      </div>
     </div>
   )
 }
-
-export default Sidebar

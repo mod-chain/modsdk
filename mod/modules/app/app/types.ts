@@ -5,8 +5,8 @@
       name: string
       key: string // address 
       desc?: string // description
-      content?: string // code of the mod
-      createed: number // time of the mod
+      content?: string // CID to the content of the user
+      created: number // time of the mod
       updated?: number // time of last update
       schema?: string // the schema of the mod
       url?: string // the url of the server

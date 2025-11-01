@@ -2,85 +2,106 @@
 
 import Link from 'next/link'
 import { ModuleType } from '@/app/types'
+import { CubeIcon, ClockIcon, KeyIcon } from '@heroicons/react/24/outline'
 import { CopyButton } from '@/app/block/CopyButton'
-import { Package, Calendar } from 'lucide-react'
 
-interface ModuleCardProps {
-  mod: ModuleType
+const shorten = (str: string): string => {
+  if (!str || str.length <= 12) return str
+  return `${str.slice(0, 8)}...${str.slice(-4)}`
 }
 
-const formatDate = (ts?: number) => {
-  if (!ts) return 'Unknown'
-  try {
-    return new Date(ts * 1000).toLocaleDateString()
-  } catch {
-    return 'Unknown'
-  }
+const time2str = (time: number): string => {
+  const d = new Date(time * 1000)
+  const now = new Date()
+  const diff = now.getTime() - d.getTime()
+  if (diff < 60_000) return 'now'
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`
+  if (diff < 604_800_000) return `${Math.floor(diff / 86_400_000)}d ago`
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+  })
 }
 
-export default function ModuleCard({ mod }: ModuleCardProps) {
-  const titleHref = `/${mod.key}/${encodeURIComponent(mod.name || '')}`
-  const description = mod.desc || mod.content || ''
+const text2color = (text: string): string => {
+  if (!text) return '#00ff00'
+  let hash = 0
+  for (let i = 0; i < text.length; i++) hash = text.charCodeAt(i) + ((hash << 5) - hash)
+  const golden_ratio = 0.618033988749895
+  const hue = (hash * golden_ratio * 360) % 360
+  const saturation = 65 + (Math.abs(hash >> 8) % 35)
+  const lightness = 50 + (Math.abs(hash >> 16) % 20)
+  return `hsl(${hue}, ${saturation}%, ${lightness}%)`
+}
+
+export default function ModuleCard({ mod }: { mod: ModuleType }) {
+  const moduleColor = text2color(mod.name)
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.06] to-white/[0.03] p-6 transition-all duration-300 hover:border-white/20 hover:shadow-2xl hover:shadow-white/5 backdrop-blur-sm">
-      {/* Subtle hover glow */}
-      <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100" style={{ background: 'radial-gradient(100% 100% at 100% 0%, rgba(74,222,128,0.08) 0%, transparent 60%)' }} />
-
-      <div className="relative z-10">
-        {/* Header: icon, name, key chip */}
-        <div className="mb-5 flex items-start justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0">
-            <div className="rounded-xl border border-white/10 bg-gradient-to-br from-green-500/15 to-blue-500/15 p-2 transition-transform duration-300 group-hover:scale-110">
-              <Package className="h-5 w-5 text-green-400" />
-            </div>
-
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <Link href={titleHref} className="min-w-0">
-                  <h3 className="max-w-full truncate text-2xl font-bold text-white transition-all duration-300 group-hover:bg-gradient-to-r group-hover:from-green-400 group-hover:to-blue-400 group-hover:bg-clip-text group-hover:text-transparent">
-                    {mod.name}
-                  </h3>
-                </Link>
-
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/40 px-3 py-1.5 text-xs font-mono text-white/80 backdrop-blur-sm">
-                  <span className="truncate max-w-[14rem]">{mod.key}</span>
-                  <span className="h-3 w-px bg-white/15" />
-                  <CopyButton text={mod.key} />
-                </div>
+    <Link
+      href={`/${mod.key}/${mod.name}`}
+      className="block group"
+    >
+      <div
+        className="relative overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-2xl"
+        style={{
+          backgroundColor: `${moduleColor}08`,
+          borderColor: `${moduleColor}30`,
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        
+        <div className="relative p-6">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div
+                className="flex-shrink-0 p-3 rounded-xl border-2"
+                style={{
+                  backgroundColor: `${moduleColor}15`,
+                  borderColor: `${moduleColor}40`,
+                }}
+              >
+                <CubeIcon className="h-6 w-6" style={{ color: moduleColor }} />
               </div>
+              <h3
+                className="text-2xl font-bold truncate"
+                style={{ color: moduleColor }}
+              >
+                {mod.name}
+              </h3>
             </div>
           </div>
-        </div>
 
-        {/* Bubbles: content and updated */}
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          {/* Content bubble */}
-          <div className="md:col-span-2 rounded-xl border border-white/10 bg-white/[0.05] p-4">
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/50">
-              Content
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border"
+              style={{
+                backgroundColor: `${moduleColor}10`,
+                borderColor: `${moduleColor}30`,
+                color: moduleColor,
+              }}
+            >
+              <KeyIcon className="h-4 w-4" />
+              <span className="font-mono">{shorten(mod.key)}</span>
+              <CopyButton size="sm" content={mod.key} />
             </div>
-            {description ? (
-              <p className="whitespace-pre-line text-sm leading-relaxed text-white/80">
-                {description}
-              </p>
-            ) : (
-              <p className="text-sm text-white/45">No description provided.</p>
-            )}
-          </div>
 
-          {/* Updated bubble */}
-          <div className="rounded-xl border border-white/10 bg-white/[0.05] p-4">
-            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/50">
-              Updated
-            </div>
-            <div className="flex items-center gap-2 text-sm text-white/80">
-              <Calendar className="h-4 w-4 text-white/60" />
-              <span>{formatDate(mod.updated)}</span>
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border"
+              style={{
+                backgroundColor: `${moduleColor}10`,
+                borderColor: `${moduleColor}30`,
+                color: moduleColor,
+              }}
+            >
+              <ClockIcon className="h-4 w-4" />
+              <span>{time2str(mod.created)}</span>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   )
 }
