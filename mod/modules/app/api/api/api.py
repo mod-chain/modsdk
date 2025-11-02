@@ -274,21 +274,34 @@ class  Api:
         return content
 
 
+    
+
+
         
 
     def setback(self, mod: m.Mod='app', content:str = 3, key=None ) -> Dict[str, Any]:
-        history = self.history(mod=mod, key=key)
-        history_row = history[-content]
-        print(f"Setting back mod: {mod} to content at time: {history_row}")
-        content_cid = history_row['data']
+        content = self.get_content(self.history(mod=mod, key=key)[-1]['data'])
         dirpath = m.dp(mod)
-        content =  self.get_content(content_cid, expand=True)
+        write_files= []
         for file, file_content in content.items():
             filepath = os.path.join(dirpath, file)
-            m.write(filepath, file_content)
+            write_files.append(filepath)
             m.print(f"[✓] Restored file: {filepath}", color="green")
-        info = self.reg(mod=mod, key=key, comment=f'setback to time {history_row["time"]}')
-        return info
+            # m.put_text(filepath, file_content)     
+        # delete files that are not in the setback content
+        delete_files = []
+        for file in m.files(dirpath):
+            filepath = os.path.join(dirpath, file)
+            if filepath not in write_files:
+                delete_files.append(filepath)
+                # os.remove(filepath)
+                m.print(f"[✓] Deleted file: {filepath}", color="yellow")
+
+        return {
+            'mod': mod,
+            'write':write_files,
+            'delete': delete_files
+        }
         
 
 
