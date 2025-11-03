@@ -6,11 +6,12 @@ import { Client } from '@/app/block/client/client'
 
 interface UserContextType {
   keyInstance: Key | null
-  user: { address: string; crypto_type: string } | null
+  setKeyInstance: (key: Key | null) => void
+  user: { address: string; crypto_type: string; balance?: number; mods?: any[] } | null
   password: string
   signIn: (password: string) => Promise<void>
   signOut: () => void
-  isLoading: boolean
+  authLoading: boolean
   client: Client | null
 }
 
@@ -18,11 +19,10 @@ const UserContext = createContext<UserContextType | undefined>(undefined)
 
 export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [keyInstance, setKeyInstance] = useState<Key | null>(null)
-  const [user, setUser] = useState<{ address: string; crypto_type: string } | null>(null)
+  const [user, setUser] = useState<{ address: string; crypto_type: string; balance?: number; mods?: any[] } | null>(null)
   const [password, setPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(true)
+  const [authLoading, setAuthLoading] = useState(true)
   const [client, setClient] = useState<Client | null>(null)
-
 
   // Initialize from localStorage on mount
   useEffect(() => {
@@ -45,7 +45,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem('user_data')
         localStorage.removeItem('user_password')
       } finally {
-        setIsLoading(false)
+        setAuthLoading(false)
       }
     }
     
@@ -85,7 +85,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   return (
-    <UserContext.Provider value={{ keyInstance, user, password, signIn, signOut, isLoading, client }}>
+    <UserContext.Provider value={{ keyInstance, setKeyInstance, user, password, signIn, signOut, authLoading, client }}>
       {children}
     </UserContext.Provider>
   )

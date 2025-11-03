@@ -19,8 +19,8 @@ class SelectFiles:
         self.model = c.mod(provider)(model=model)
 
     def forward(self,  
-              path: Union[List[str], Dict[Any, str]] = './',  
               query: str = 'most relevant', 
+              path: Union[List[str], Dict[Any, str]] = './',  
               n: int = 10, 
               mod=None,
               content: bool = True,

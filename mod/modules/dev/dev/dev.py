@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Dict, List, Union, Optional, Any, Tuple
 from .utils import *
 import mod as c
-
+print=c.print
 class Dev:
 
 
@@ -24,7 +24,6 @@ class Dev:
                 make sure the params is a legit json string within the STEP ANCHORS
                 YOU CANNOT RESPOND WITH MULTIPLE PLANS BRO JUST ONE PLAN
                 <PLAN>
-                <COMMENT>This is a plan to achieve the goal, follow the steps one by one</COMMENT>
                 <STEP>JSON(tool:str, params:dict)</STEP> # STEP 1 
                 <STEP>JSON(tool:str, params:dict)</STEP> # STEP 2
                 <STEP>JSON(tool:finish, params:dict)</STEP> # FINAL STEP
@@ -56,9 +55,9 @@ class Dev:
 
         self.prompt =  """
                 --INPUTS--
-                goal={goal} # THE GOAL YOU ARE TRYING TO ACHIEVE
-                src={src} # THE SOURCE FILES YOU ARE TRYING TO MODIFY, ONLY USE FILES FROM THIS DIRECTORY AND WRITE FILES TO THIS DIRECTORY
                 query={query} # THE QUERY YOU ARE TRYING TO ANSWER
+                goal={goal} # THE GOAL YOU ARE TRYING TO ACHIEVE
+                path={path} # THE SOURCE FILES YOU ARE TRYING TO MODIFY, ONLY USE FILES FROM THIS DIRECTORY AND WRITE FILES TO THIS DIRECTORY AND DO NOT TRY TO READ ANYTHING OUTSIDE THIS DIRECTORY
                 step={step} # THE CURRENT STEP YOU ARE ON
                 files={files} # THE FILES
                 steps={steps} # THE MAX STEPS YOU ARE ALLOWED TO TAKE IF IT IS 1 YOU MUST DO IT IN ONE SHOT OR ELSE YOU WILL NOT BE ABLE TO REALIZE IT
@@ -68,7 +67,6 @@ class Dev:
                 --OUTPUT--
             """
 
-    tmp_mod_prefix = 'dev.tmp'
 
     def forward(self, 
                 text: str = 'make this like the base ', 
@@ -81,7 +79,7 @@ class Dev:
                 mode: str = 'auto', 
                 model: Optional[str] = 'anthropic/claude-sonnet-4.5',
                 steps = 1,
-                src='./',
+                path='./',
                 safety=True,
                 base = None,
                 remote=False,
@@ -89,21 +87,35 @@ class Dev:
                 trials=4,
                 
                 **kwargs) -> Dict[str, str]:
+        
         """
         use this to run the agent with a specific text and parameters
         """
         if mod != None:
-            src = c.dirpath(mod)
-        print(f"Dev Agent running with src={src}, model={model}, steps={steps}, temperature={temperature}, max_tokens={max_tokens}, stream={stream}, mode={mode}, safety={safety}")
+            path = c.dirpath(mod)
         text = ' '.join(list(map(str, [text] + list(extra_text))))
         query = self.preprocess(text=text)
-        self.clear_memory()
-        self.add_memory(self.tool('select_files')(src))
+        self.add_memory(self.tool('select_files')(path=path, query=query))
         if base:
             self.add_memory(c.content(base))
+
+        print(f"Dev Agent starting with query: {query}", color='green')
+        print(f"Using model: {model}", color='green')
+        print(f"Using path: {path}", color='green')
+        print(f"Using steps: {steps}", color='green')
+        print(f"Using temperature: {temperature}", color='green')
         for step in range(steps):
-            params = dict( query=query, src=src, step=step, steps=steps )
-            prompt = self.process_prompt(params)
+            prompt = self.prompt.format(
+                goal=self.goal,
+                output_format=self.output_format,
+                tool2schema=self.tool2schema,
+                memory=self.get_memory(),
+                query=query,
+                path=path,
+                step=step,
+                steps=steps,
+                files = c.files(path),
+            )            
             output = self.model.forward(prompt, stream=stream, model=model, max_tokens=max_tokens, temperature=temperature )
             plan =  self.get_plan(output, safety=safety) 
             if self.is_plan_complete(plan):
@@ -116,14 +128,7 @@ class Dev:
 
     def process_prompt(self, params:dict):
         
-        prompt = self.prompt.format(
-            goal=self.goal,
-            output_format=self.output_format,
-            tool2schema=self.tool2schema,
-            memory=self.get_memory(),
-            files= c.files(params['src']),
-            **params
-        )
+
         return prompt
 
 
@@ -253,13 +258,13 @@ class Dev:
         tool_name = tool_name.replace('/', '.')
         return c.mod(self.tools_prefix + '.' + tool_name)(*args, **kwargs).forward
 
-    def test(self, query='make a python file that stores 2+2 in a variable and prints it', src='./', steps=3):
+    def test(self, query='make a python file that stores 2+2 in a variable and prints it', path='./', steps=3):
         """
         Test the Dev agent with a sample query and source directory.
         """
         result = self.forward(
             text=query,
-            src=src,
+            path=path,
             steps=steps,
             temperature=0.3,
             stream=True,

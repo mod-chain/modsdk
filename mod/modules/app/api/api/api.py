@@ -403,8 +403,8 @@ class  Api:
         """
         return 0
 
-    def edit(self, mod: str, *query,  key=None, dev_mod='dev' ) -> Dict[str, Any]:
+    def edit(self, *query,  key=None,  mod: str='app', dev_mod='dev' ) -> Dict[str, Any]:
         dev = m.mod(dev_mod)()
         text = ' '.join(list(map(str, query)))
-        dev.forward(mod=mod, text=text)
+        dev.forward(mod=mod, text=text, safety=False)
         return self.reg(mod=mod, key=key, comment=text)
