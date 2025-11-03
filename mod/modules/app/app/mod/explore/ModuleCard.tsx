@@ -4,90 +4,82 @@ import { ModuleType } from '@/app/types'
 import { CopyButton } from '@/app/block/CopyButton'
 import Link from 'next/link'
 import { Package, Calendar, User, Hash } from 'lucide-react'
-import { time2utc } from '@/app/utils'
+import { time2str, text2color, shorten } from '@/app/utils'
 
 interface ModuleCardProps {
   mod: ModuleType
 }
 
 const MODULE_COLORS = [
-  { from: 'from-purple-500/20', to: 'to-pink-500/20', text: 'text-purple-400', hover: 'from-purple-400 to-pink-400', border: 'border-purple-500/30' },
-  { from: 'from-blue-500/20', to: 'to-cyan-500/20', text: 'text-blue-400', hover: 'from-blue-400 to-cyan-400', border: 'border-blue-500/30' },
-  { from: 'from-green-500/20', to: 'to-emerald-500/20', text: 'text-green-400', hover: 'from-green-400 to-emerald-400', border: 'border-green-500/30' },
-  { from: 'from-orange-500/20', to: 'to-red-500/20', text: 'text-orange-400', hover: 'from-orange-400 to-red-400', border: 'border-orange-500/30' },
-  { from: 'from-yellow-500/20', to: 'to-amber-500/20', text: 'text-yellow-400', hover: 'from-yellow-400 to-amber-400', border: 'border-yellow-500/30' },
-  { from: 'from-indigo-500/20', to: 'to-violet-500/20', text: 'text-indigo-400', hover: 'from-indigo-400 to-violet-400', border: 'border-indigo-500/30' },
+  { from: 'from-purple-500/20', to: 'to-pink-500/20', text: 'text-purple-400', hover: 'from-purple-400 to-pink-400', border: 'border-purple-500/40', glow: 'shadow-purple-500/20' },
+  { from: 'from-blue-500/20', to: 'to-cyan-500/20', text: 'text-blue-400', hover: 'from-blue-400 to-cyan-400', border: 'border-blue-500/40', glow: 'shadow-blue-500/20' },
+  { from: 'from-green-500/20', to: 'to-emerald-500/20', text: 'text-green-400', hover: 'from-green-400 to-emerald-400', border: 'border-green-500/40', glow: 'shadow-green-500/20' },
+  { from: 'from-orange-500/20', to: 'to-red-500/20', text: 'text-orange-400', hover: 'from-orange-400 to-red-400', border: 'border-orange-500/40', glow: 'shadow-orange-500/20' },
+  { from: 'from-yellow-500/20', to: 'to-amber-500/20', text: 'text-yellow-400', hover: 'from-yellow-400 to-amber-400', border: 'border-yellow-500/40', glow: 'shadow-yellow-500/20' },
+  { from: 'from-indigo-500/20', to: 'to-violet-500/20', text: 'text-indigo-400', hover: 'from-indigo-400 to-violet-400', border: 'border-indigo-500/40', glow: 'shadow-indigo-500/20' },
 ]
 
 export default function ModuleCard({ mod }: ModuleCardProps) {
   const colorIndex = mod.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % MODULE_COLORS.length
   const colors = MODULE_COLORS[colorIndex]
+  const keyColor = text2color(mod.key)
 
   return (
-    <div className={`group relative bg-gradient-to-br ${colors.from} ${colors.to} border ${colors.border} rounded-xl p-5 hover:border-white/30 hover:shadow-2xl hover:shadow-white/10 transition-all duration-300 backdrop-blur-sm overflow-hidden`}>
+    <div className={`group relative bg-gradient-to-br ${colors.from} ${colors.to} border-2 ${colors.border} rounded-xl p-5 hover:border-white/40 hover:shadow-2xl hover:${colors.glow} transition-all duration-300 backdrop-blur-sm overflow-hidden h-full flex flex-col`}>
       <div className={`absolute inset-0 bg-gradient-to-br ${colors.from} via-transparent ${colors.to} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
       
-      <div className="relative z-10 space-y-3">
+      <div className="relative z-10 space-y-4 flex-1 flex flex-col">
         <div className="flex items-start justify-between gap-3">
           <Link href={`${mod.name}/${mod.key}`} className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 group/link">
-              <div className={`flex-shrink-0 p-2 bg-gradient-to-br ${colors.from} ${colors.to} rounded-lg border border-white/20 group-hover/link:scale-110 transition-transform duration-300`}>
-                <Package className={`${colors.text}`} size={20} strokeWidth={2} />
+            <div className="flex items-center gap-3 group/link">
+              <div className={`flex-shrink-0 p-2.5 bg-gradient-to-br ${colors.from} ${colors.to} rounded-lg border-2 border-white/30 group-hover/link:scale-110 group-hover/link:rotate-6 transition-all duration-300 shadow-lg`}>
+                <Package className={`${colors.text}`} size={32} strokeWidth={2.5} />
               </div>
-              <h3 className={`text-2xl font-bold text-white group-hover/link:text-transparent group-hover/link:bg-gradient-to-r group-hover/link:${colors.hover} group-hover/link:bg-clip-text transition-all duration-300 truncate`}>
+              <h3 className={`text-3xl font-black text-white group-hover/link:text-transparent group-hover/link:bg-gradient-to-r group-hover/link:${colors.hover} group-hover/link:bg-clip-text transition-all duration-300 truncate uppercase tracking-wide`}>
                 {mod.name}
               </h3>
             </div>
           </Link>
 
-          <div className="flex-shrink-0 flex items-center gap-2 bg-black/50 border border-white/20 px-3 py-1.5 rounded-lg backdrop-blur-sm hover:bg-black/60 transition-colors">
-            <User className="text-white/60" size={16} strokeWidth={2} />
-            <code className="text-sm text-white/80 font-mono max-w-[100px] truncate" title={mod.key}>
-              {mod.key}
-            </code>
-            <CopyButton text={mod.key} />
-          </div>
+          <Link href={`/user/${mod.key}`} className="flex-shrink-0">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg backdrop-blur-sm hover:scale-105 transition-all duration-300 border-2 group/key shadow-lg" style={{ backgroundColor: keyColor, borderColor: keyColor }}>
+              <User className="text-white group-hover/key:animate-pulse" size={20} strokeWidth={2.5} />
+              <code className="text-base font-mono font-bold text-white" title={mod.key}>
+                {shorten(mod.key)}
+              </code>
+            </div>
+          </Link>
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {mod.cid && (
-            <div className="flex items-center gap-2 bg-black/40 border border-white/20 px-3 py-1.5 rounded-lg backdrop-blur-sm hover:bg-black/50 transition-colors">
-              <Hash className={`${colors.text}/80`} size={16} strokeWidth={2} />
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm text-white/60 font-medium">CID:</span>
-                <code className={`text-sm ${colors.text} font-mono max-w-[180px] truncate`} title={mod.cid}>
-                  {mod.cid.slice(0, 10)}...{mod.cid.slice(-6)}
+          {mod.content && (
+            <div className="flex items-center gap-2 bg-black/50 border-2 border-white/30 px-3 py-2 rounded-lg backdrop-blur-sm hover:bg-black/60 hover:border-white/50 transition-all shadow-md">
+              <Hash className={`${colors.text}`} size={18} strokeWidth={2.5} />
+              <div className="flex items-center gap-2">
+                <span className="text-base text-white/70 font-bold uppercase">CID:</span>
+                <code className={`text-base ${colors.text} font-mono font-bold max-w-[140px] truncate`} title={mod.content}>
+                  {shorten(mod.content)}
                 </code>
-                <CopyButton text={mod.cid} />
+                <CopyButton text={mod.content} />
               </div>
             </div>
           )}
 
-          {mod.created && (
-            <div className="flex items-center gap-2 bg-black/40 border border-white/20 px-3 py-1.5 rounded-lg backdrop-blur-sm">
-              <Calendar className={`${colors.text}/80`} size={16} strokeWidth={2} />
-              <span className="text-sm text-white/60 font-medium">Created:</span>
-              <span className={`text-sm ${colors.text} font-semibold`} title={time2utc(mod.created)}>
-                {time2utc(mod.created)}
-              </span>
-            </div>
-          )}
-
           {mod.updated && (
-            <div className="flex items-center gap-2 bg-black/40 border border-white/20 px-3 py-1.5 rounded-lg backdrop-blur-sm">
-              <Calendar className={`${colors.text}/80`} size={16} strokeWidth={2} />
-              <span className="text-sm text-white/60 font-medium">Updated:</span>
-              <span className={`text-sm ${colors.text} font-semibold`} title={time2utc(mod.updated)}>
-                {time2utc(mod.updated)}
+            <div className="flex items-center gap-2 bg-black/50 border-2 border-white/30 px-3 py-2 rounded-lg backdrop-blur-sm shadow-md">
+              <Calendar className={`${colors.text}`} size={18} strokeWidth={2.5} />
+              <span className="text-base text-white/70 font-bold uppercase">Updated:</span>
+              <span className={`text-base ${colors.text} font-black`}>
+                {time2str(mod.updated)}
               </span>
             </div>
           )}
         </div>
 
-        {(mod.desc || mod.content) && (
-          <div className="bg-black/30 border border-white/20 px-4 py-3 rounded-lg backdrop-blur-sm">
-            <p className="text-base text-white/80 leading-relaxed line-clamp-2">
-              {mod.desc || mod.content}
+        {mod.desc && (
+          <div className="bg-black/40 border-2 border-white/30 px-4 py-3 rounded-lg backdrop-blur-sm flex-1 shadow-md">
+            <p className="text-lg text-white/90 leading-relaxed line-clamp-3 font-medium">
+              {mod.desc}
             </p>
           </div>
         )}

@@ -16,8 +16,8 @@ export function Header() {
   const [showMenu, setShowMenu] = useState(false)
   const [isNarrow, setIsNarrow] = useState(false)
   
-  const modsColor = text2color('mods')
-  const usersColor = text2color('users')
+  const modsColor = '#3b82f6'
+  const usersColor = '#10b981'
 
   useEffect(() => {
     const checkWidth = () => {
@@ -29,92 +29,97 @@ export function Header() {
   }, [])
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/95 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 w-full border-b-2 bg-black" style={{ borderColor: '#00ff0040' }}>
       <div className="flex h-20 items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-6">
           <LogoHeader />
-          <SearchHeader />
-        </div>
-        
-        <div className="flex items-center gap-4">
+          
           {!isNarrow && (
-            <nav className="flex items-center gap-2">
+            <nav className="flex items-center gap-3">
               <Link
                 href="/mod/explore"
-                className={`flex items-center gap-2 px-5 py-3 rounded-lg border transition-all duration-200 ${
-                  isModsPage ? 'shadow-lg' : 'hover:shadow-md'
+                className={`flex items-center gap-3 px-6 py-4 rounded-xl border-2 transition-all duration-200 font-black uppercase tracking-wider backdrop-blur-md ${
+                  isModsPage ? 'shadow-2xl scale-105 active:scale-100' : 'hover:shadow-xl hover:scale-105 active:scale-95'
                 }`}
                 style={{
-                  backgroundColor: isModsPage ? modsColor : 'transparent',
-                  borderColor: modsColor,
-                  color: isModsPage ? '#000000' : modsColor,
+                  backgroundColor: isModsPage ? `${modsColor}50` : `${modsColor}25`,
+                  borderColor: `${modsColor}80`,
+                  color: modsColor,
+                  boxShadow: isModsPage ? `0 0 30px ${modsColor}60, inset 0 2px 10px ${modsColor}30` : `0 0 15px ${modsColor}20`,
                 }}
               >
-                <CubeIcon className="h-6 w-6" />
-                <span className="font-bold text-lg">MODS</span>
+                <CubeIcon className="h-7 w-7" />
+                <span className="font-black text-xl drop-shadow-lg">MODS</span>
               </Link>
               
               <Link
                 href="/user/explore"
-                className={`flex items-center gap-2 px-5 py-3 rounded-lg border transition-all duration-200 ${
-                  isUsersPage ? 'shadow-lg' : 'hover:shadow-md'
+                className={`flex items-center gap-3 px-6 py-4 rounded-xl border-2 transition-all duration-200 font-black uppercase tracking-wider backdrop-blur-md ${
+                  isUsersPage ? 'shadow-2xl scale-105 active:scale-100' : 'hover:shadow-xl hover:scale-105 active:scale-95'
                 }`}
                 style={{
-                  backgroundColor: isUsersPage ? usersColor : 'transparent',
-                  borderColor: usersColor,
-                  color: isUsersPage ? '#000000' : usersColor,
+                  backgroundColor: isUsersPage ? `${usersColor}50` : `${usersColor}25`,
+                  borderColor: `${usersColor}80`,
+                  color: usersColor,
+                  boxShadow: isUsersPage ? `0 0 30px ${usersColor}60, inset 0 2px 10px ${usersColor}30` : `0 0 15px ${usersColor}20`,
                 }}
               >
-                <UsersIcon className="h-6 w-6" />
-                <span className="font-bold text-lg">USERS</span>
+                <UsersIcon className="h-7 w-7" />
+                <span className="font-black text-xl drop-shadow-lg">USERS</span>
               </Link>
             </nav>
           )}
-
+          
+          <SearchHeader />
+        </div>
+        
+        <div className="flex items-center gap-4">
           {isNarrow && (
             <div className="relative">
               <button 
                 onMouseEnter={() => setShowMenu(true)} 
-                className="p-4 rounded-lg border border-white/20 hover:bg-white/10 transition-all" 
+                className="p-4 rounded-lg border-2 border-white/40 bg-white/15 hover:bg-white/20 transition-all active:scale-95" 
                 style={{height: '56px'}}
               >
                 <Bars3Icon className="h-6 w-6 text-white" />
               </button>
               {showMenu && (
                 <div 
-                  className="absolute top-full left-0 mt-2 border border-white/10 bg-black/95 backdrop-blur-sm rounded-lg shadow-xl min-w-[200px]"
+                  className="absolute top-full left-0 mt-2 border-2 border-white/20 bg-black/95 backdrop-blur-md rounded-lg shadow-xl min-w-[200px]"
                   onMouseEnter={() => setShowMenu(true)}
                   onMouseLeave={() => setShowMenu(false)}
                 >
                   <nav className="flex flex-col p-2">
                     <Link
                       href="/mod/explore"
-                      className={`flex items-center gap-2 px-5 py-3 rounded-lg border transition-all duration-200 mb-2 ${
-                        isModsPage ? 'shadow-lg' : 'hover:shadow-md'
+                      className={`flex items-center gap-2 px-5 py-3 rounded-lg border-2 transition-all duration-200 mb-2 font-black uppercase backdrop-blur-md ${
+                        isModsPage ? 'shadow-xl active:scale-95' : 'hover:shadow-lg active:scale-95'
                       }`}
                       style={{
-                        backgroundColor: isModsPage ? modsColor : 'transparent',
-                        borderColor: modsColor,
-                        color: isModsPage ? '#000000' : modsColor,
+                        backgroundColor: isModsPage ? `${modsColor}50` : `${modsColor}25`,
+                        borderColor: `${modsColor}80`,
+                        color: modsColor,
+                        boxShadow: isModsPage ? `0 0 20px ${modsColor}50, inset 0 2px 8px ${modsColor}30` : `0 0 10px ${modsColor}20`,
                       }}
                     >
                       <CubeIcon className="h-6 w-6" />
-                      <span className="font-bold text-lg">MODS</span>
+                      <span className="font-black text-lg drop-shadow-lg">MODS</span>
                     </Link>
                     
                     <Link
                       href="/user/explore"
-                      className={`flex items-center gap-2 px-5 py-3 rounded-lg border transition-all duration-200 ${
-                        isUsersPage ? 'shadow-lg' : 'hover:shadow-md'
+                      className={`flex items-center gap-2 px-5 py-3 rounded-lg border-2 transition-all duration-200 font-black uppercase backdrop-blur-md ${
+                        isUsersPage ? 'shadow-xl active:scale-95' : 'hover:shadow-lg active:scale-95'
                       }`}
                       style={{
-                        backgroundColor: isUsersPage ? usersColor : 'transparent',
-                        borderColor: usersColor,
-                        color: isUsersPage ? '#000000' : usersColor,
+                        backgroundColor: isUsersPage ? `${usersColor}50` : `${usersColor}25`,
+                        borderColor: `${usersColor}80`,
+                        color: usersColor,
+                        boxShadow: isUsersPage ? `0 0 20px ${usersColor}50, inset 0 2px 8px ${usersColor}30` : `0 0 10px ${usersColor}20`,
                       }}
                     >
                       <UsersIcon className="h-6 w-6" />
-                      <span className="font-bold text-lg">USERS</span>
+                      <span className="font-black text-lg drop-shadow-lg">USERS</span>
                     </Link>
                   </nav>
                 </div>

@@ -2,43 +2,53 @@
 
 import { useState } from 'react'
 import { ClipboardDocumentIcon, CheckIcon } from '@heroicons/react/24/outline'
+import { copyToClipboard, shorten } from '../utils'
 
 interface CopyButtonProps {
-  content: string
+  text?: string
+  content?: string
   size?: 'sm' | 'md' | 'lg'
+  showShortened?: boolean
 }
 
-export function CopyButton({ content, size = 'md' }: CopyButtonProps) {
+export function CopyButton({ text, content, size = 'md', showShortened = false }: CopyButtonProps) {
   const [copied, setCopied] = useState(false)
+  const copyContent = text || content || ''
+  const displayText = showShortened ? shorten(copyContent) : copyContent
 
   const handleCopy = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    try {
-      await navigator.clipboard.writeText(content)
+    const success = await copyToClipboard(copyContent)
+    if (success) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    } catch (err) {
-      console.error('Failed to copy:', err)
     }
   }
 
   const sizeClasses = {
-    sm: 'h-4 w-4',
-    md: 'h-5 w-5',
-    lg: 'h-6 w-6'
+    sm: 'h-10 w-10 p-2.5',
+    md: 'h-12 w-12 p-3',
+    lg: 'h-14 w-14 p-3.5'
+  }
+
+  const iconSizes = {
+    sm: 'w-5 h-5',
+    md: 'w-6 h-6',
+    lg: 'w-7 h-7'
   }
 
   return (
     <button
       onClick={handleCopy}
-      className="inline-flex items-center justify-center p-1 rounded hover:bg-white/10 transition-colors"
-      title={copied ? 'Copied!' : 'Copy to clipboard'}
+      className={`${sizeClasses[size]} inline-flex items-center justify-center rounded-xl hover:bg-white/10 transition-colors flex-shrink-0`}
+      title={copied ? 'Copied!' : `Copy ${copyContent} to clipboard`}
     >
+      {showShortened && <span className="mr-2 text-white/70">{displayText}</span>}
       {copied ? (
-        <CheckIcon className={`${sizeClasses[size]} text-green-400`} />
+        <CheckIcon className={`${iconSizes[size]} text-green-400`} />
       ) : (
-        <ClipboardDocumentIcon className={`${sizeClasses[size]} text-white/70 hover:text-white`} />
+        <ClipboardDocumentIcon className={`${iconSizes[size]} text-white/70 hover:text-white`} />
       )}
     </button>
   )

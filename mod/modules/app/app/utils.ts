@@ -32,18 +32,21 @@ export const shorten = (str: string): string => {
 }
 
 export const time2str = (time: number): string => {
-  const d = new Date(time * 1000)
-  const now = new Date()
-  const diff = now.getTime() - d.getTime()
-  if (diff < 60_000) return 'now'
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`
-  if (diff < 604_800_000) return `${Math.floor(diff / 86_400_000)}d ago`
-  return d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
-  })
+  const now = Math.floor(Date.now() / 1000)
+  const diff = Math.floor(now - time)
+  // round down to nearest second/minute/hour/day
+  
+  
+  if (diff < 60) return `${diff} second${diff !== 1 ? 's' : ''} ago`
+  
+  const minutes = Math.floor(diff / 60)
+  if (minutes < 60) return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`
+  
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`
+  
+  const days = Math.floor(hours / 24)
+  return `${days} day${days !== 1 ? 's' : ''} ago`
 }
 
 
