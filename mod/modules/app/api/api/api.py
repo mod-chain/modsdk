@@ -13,6 +13,18 @@ class  Api:
         self.store = m.mod(store)()
         self.key = m.key(key)
 
+    def exists(self, mod: m.Mod='store', key=None) -> bool:
+        """Check if a mod Mod exists in IPFS.
+        
+        Args:
+            mod: Commune Mod object
+            key: Key object or address string
+        Returns:
+            True if mod exists, False otherwise
+        """
+        cid = self.registry(key=key).get(mod, None)
+        return bool(cid)
+
     def mod(self, mod: m.Mod='store', key=None, schema=False, content=False, **kwargs) -> Dict[str, Any]:
         """Add a mod Mod to IPFS.
         
@@ -22,6 +34,7 @@ class  Api:
         Returns:
             Dictionary with IPFS hash and other metadata
         """
+        
         cid = self.registry(key=key).get(mod, mod)
         mod =  self.store.get_data(cid) if cid else None
         if schema: 
@@ -52,7 +65,7 @@ class  Api:
         return  registry.get(key, {}).get(mod, None)
     
     def update_registry(self, mod:str, info:dict):
-        assert self.verify(info)
+        # assert self.verify(info)
         cid = self.add_data(info)
         registry = m.get(self.registry_path, {})
         key = info['key']
@@ -110,7 +123,7 @@ class  Api:
         content_cid = self.add_content(mod, comment=comment)
         schema_cid = self.add_schema(mod)
 
-        new_info = {
+        info = {
             'content': content_cid,
             'schema': schema_cid,
             'prev': prev_cid, # previous state
@@ -121,10 +134,10 @@ class  Api:
             'url': self.get_url(mod),
         }
         if prev_cid is not None:
-            info = self.store.get_data(prev_cid)
-            assert info['key'] == new_info['key'], 'Key mismatch'
-            if info['content'] != new_info['content']:
-                info.update(new_info)
+            old_info = self.store.get_data(prev_cid)
+            assert old_info['key'] == info['key'], 'Key mismatch'
+            if old_info['content'] != info['content']:
+                info = {**old_info, **info}
         info.pop('signature', None)
         info['signature'] = key.sign(info, mode='str')
         info['cid'] = self.add_data(info)
@@ -148,8 +161,8 @@ class  Api:
             return mods
 
 
-    def names(self, search=None):
-        mods = list(self.registry(search=search).keys())
+    def names(self, search=None, key=None, **kwargs) -> List[str]:
+        mods = list(self.registry(search=search, key=key, **kwargs).keys())
         return mods
 
     def history(self, mod='store', features=['time', 'comment'] , key=None, df=False) -> List[Dict[str, Any]]:
@@ -328,7 +341,7 @@ class  Api:
         """
         key_address = mod_info['key']
         signature = mod_info['signature']
-        mod_info = {k:v for k,v in mod_info.items() if k != 'signature'}
+        mod_info = {k:v for k,v in mod_info.items() if k not in ['signature', 'cid']}
         valid = m.verify(mod_info, signature=signature, address=key_address, mode='str')
         return valid
 
@@ -404,7 +417,6 @@ class  Api:
         text = ' '.join(list(map(str, query)))
         dev.forward(mod=mod, text=text, safety=False)
         return self.reg(mod=mod, key=key, comment=text)
-
 
     def chat(self, text, *extra_texts, key=None, mod: str='model.openrouter', stream=False) -> Dict[str, Any]:
         return m.mod(mod)().forward(' '.join([text] + list(extra_texts)), stream=stream)

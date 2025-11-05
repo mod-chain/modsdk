@@ -23,7 +23,7 @@ from .utils.types import (ChainTransactionError,
                     Chunk)
 from typing import Any, Callable, Optional, Union, Mapping
 import pandas as pd
-import mod as c
+import mod as m
 
 
 U16_MAX = 2**16 - 1
@@ -39,7 +39,8 @@ class ModChain:
     }
     networks = list(urls.keys())
     default_network : str = 'main' # network name [main, test]
-
+    decimals = 12 # number of decimals for the native token
+    blocktime = 6 # seconds
     def __init__(
         self,
         url: str = None,
@@ -54,7 +55,7 @@ class ModChain:
 
     ):
         self.path = path
-        self.store = c.mod('store')(path)
+        self.store = m.mod('store')(path)
         self.set_network(network=network, # add a little shortcut,
                          mode=mode,
                          url=url,  
@@ -76,13 +77,13 @@ class ModChain:
                         num_connections: int = 1,
                         ws_options: dict[str, int] = {},
                         wait_for_finalization: bool = False ):
-        t0 = c.time()
+        t0 = m.time()
         self.network = 'test' if test else network
         self.ws_options = ws_options
         self.mode = mode
         if url == None:
             url_options = self.urls[self.network].get('archive' if archive else 'rpc', [])
-            url = c.choice(url_options)
+            url = m.choice(url_options)
             if not url.startswith(mode):
                 url = mode + '://' + url
             self.url = url
@@ -117,12 +118,12 @@ class ModChain:
         """
 
         if not hasattr(self, 'connections_queue'):
-            t0 = c.time()
+            t0 = m.time()
             self.connections_queue = queue.Queue(self.num_connections)
             for _ in range(self.num_connections):
                 self.connections_queue.put(SubstrateInterface(self.url, ws_options=self.ws_options, use_remote_preset=True ))
-            self.connection_latency = round(c.time() - t0, 2)
-            c.print(f'Chain(network={self.network} url={self.url} connections={self.num_connections} latency={self.connection_latency}s)', color='blue') 
+            self.connection_latency = round(m.time() - t0, 2)
+            m.print(f'Chain(network={self.network} url={self.url} connections={self.num_connections} latency={self.connection_latency}s)', color='blue') 
         conn = self.connections_queue.get(timeout=timeout)
         if init:
             conn.init_runtime()  # type: ignore
@@ -612,7 +613,7 @@ class ModChain:
             {'function_name': 'query_result', ...}
         """
 
-        c.print(f'QueryBatch({functions})', verbose=verbose)
+        m.print(f'QueryBatch({functions})', verbose=verbose)
         result: dict[str, str] = {}
         if not functions:
             raise Exception("No result")
@@ -661,10 +662,10 @@ class ModChain:
             >>> query_batch_map(substrate_instance, {'module_name': [('function_name', ['param1', 'param2'])]})
             # Returns the combined result of the map batch query
         """
-        c.print(f'QueryBatchMap({functions})', verbose=verbose)
+        m.print(f'QueryBatchMap({functions})', verbose=verbose)
         if path != None:
             path = self.get_path(f'{self.network}/query_batch_map/{path}')
-            return c.get(path, max_age=max_age, update=update)
+            return m.get(path, max_age=max_age, update=update)
         multi_result: dict[str, dict[Any, Any]] = {}
 
         def recursive_update(
@@ -704,14 +705,14 @@ class ModChain:
                 try:
                     storage_result = self._decode_response(response, chunk_info.fun_params, chunk_info.prefix_list, block_hash)
                 except Exception as e:
-                    c.print(f'Error decoding response for {storage} with queries {queries}: {e}', color='red')
+                    m.print(f'Error decoding response for {storage} with queries {queries}: {e}', color='red')
                     continue
                 multi_result = recursive_update(multi_result, storage_result)
 
         results =  self.process_results(multi_result)
         if path != None:
             print('Saving results to -->', path)
-            c.put(path, results)
+            m.put(path, results)
         return results
             
     def block_hash(self, block: Optional[int] = None) -> str:
@@ -781,7 +782,7 @@ class ModChain:
         if name == 'Weights':
             module = 'SubnetEmissionModule'
         path =  self.get_path(f'{self.network}/query_map/{module}/{name}_params={params}')
-        result = c.get(path, None, max_age=max_age, update=update)
+        result = m.get(path, None, max_age=max_age, update=update)
         if result == None:
             result = self.query_batch_map({module: [(name, params)]}, block_hash)
             if extract_value:
@@ -796,7 +797,7 @@ class ModChain:
                 for k,v in result.items():
                     self.dict_put(new_result, list(k), v )  
                 result = new_result
-            c.put(path, result)
+            m.put(path, result)
 
         return self.process_results(result)
 
@@ -836,7 +837,7 @@ class ModChain:
                                 value=value)
 
     def to_nanos(self, amount):
-        return amount * 10**9
+        return amount * 10**self.decimals
 
     def is_float(self, x):
         """
@@ -863,12 +864,12 @@ class ModChain:
         """
 
             
-        addresses = addresses or list(c.key2address().values())
+        addresses = addresses or list(m.key2address().values())
 
         if threads > 1:
             self.set_connections(connections)
             futures = []
-            progress = c.tqdm(total=len(addresses), desc='Getting Balances', unit='addr')
+            progress = m.tqdm(total=len(addresses), desc='Getting Balances', unit='addr')
             chunk_size = max(1, len(addresses) // threads)
             
             future2addresses = {}
@@ -876,10 +877,10 @@ class ModChain:
                 print(f'Getting balances for addresses {i} to {i + chunk_size}...')
                 chunk = addresses[i:i + chunk_size]
                 params = dict(addresses=chunk, extract_value=extract_value, block_hash=block_hash, threads=1)
-                future2addresses[c.submit(self.get_balances, params)] = chunk
+                future2addresses[m.submit(self.get_balances, params)] = chunk
 
             results = {}
-            for f in c.as_completed(future2addresses, timeout=timeout):
+            for f in m.as_completed(future2addresses, timeout=timeout):
                 addresses_chunk = future2addresses[f]
                 balances_chunk = f.result()
                 assert len(balances_chunk) == len(addresses_chunk), f"Expected {len(addresses_chunk)} balances, got {len(balances_chunk)}"
@@ -894,10 +895,12 @@ class ModChain:
         key2balance = {k:v[1].value['data']['free'] for k,v in zip(addresses, balances) }
         return key2balance
     
-    def balances(self, *args, **kwargs):  
+    def balances(self, fmt='j', *args, **kwargs) -> dict[str, int]:  
         balances =  self.query_map("Account", params=[], module="System", *args, **kwargs)
-        return {k: balances[k]['data']['free'] for k in balances}
+        balances =  {k: self.format_amount(balances[k]['data']['free'], fmt=fmt) for k in balances}
+        return balances
 
+    bals = balances
     def balance(
         self,
         addr: Ss58Address=None,
@@ -943,19 +946,18 @@ class ModChain:
             if  self.valid_ss58_address(key):
                 return key
             else:
-                key = c.get_key(key)
+                key = m.get_key(key)
                 if key == None:
                     raise ValueError(f"Key {key} not found")
                 return key.key_address
-        elif hasattr(key, 'key_address'):
-            return key.key_address
+        elif hasattr(key, 'address'):
+            return key.address
         else:
             raise ValueError(f"Key {key} not found")
 
     def get_key(self, key:str ):
-        if isinstance(key, str):
-            key = c.get_key( key )
-        assert hasattr(key, 'key_address'), f"Key {key} not found"
+        key = m.get_key( key )
+        assert hasattr(key, 'address'), f"Key {key} not found"
         return key
 
     def get_path(self, path:str) -> str:
@@ -998,9 +1000,9 @@ class ModChain:
                 x[k] = self.format_amount(v, fmt=fmt)
             return x
         if fmt in ['j' , 'joules', 'jou']:
-            x = x / 10**9
+            x = x / 10**self.decimals
         elif fmt in ['nano', 'n', 'nj', 'nanos', 'ncom']:
-            x = x * 10**9
+            x = x * 10**self.decimals
         else:
             raise NotImplementedError(fmt)
         return x
@@ -1008,9 +1010,6 @@ class ModChain:
     @property
     def substrate(self):
         return self.get_conn()
-    @property
-    def block_number(self) -> int:
-        return self.get_conn().block_number(block_hash=None)
 
     def __str__(self):
         return f'Chain(network={self.network}, url={self.url})'
@@ -1026,19 +1025,12 @@ class ModChain:
         """
         Transfers a specified amount of tokens from the signer's account to the
         specified account.
-
+        
         Args:
             key: The keypair associated with the sender's account.
             amount: The amount to transfer, in nanotokens.
             dest: The SS58 address of the recipient.
 
-        Returns:
-            A receipt of the transaction.
-
-        Raises:
-            InsufficientBalanceError: If the sender's account does not have
-              enough balance.
-            ChainTransactionError: If the transaction fails.
         """
         if self.is_float(dest):
             dest = amount
@@ -1053,9 +1045,10 @@ class ModChain:
             amount = input('Enter amount: ')
         amount = float(str(amount).replace(',', ''))
 
-        params = {"dest": dest, "value":int(self.to_nanos(amount))}
-        return self.call( module="Modules", fn="transfer_keep_alive", params=params, key=key, multisig=multisig, safety=safety)
+        params = {"dest": dest, "value":int(self.format_amount(amount, 'nano'))}
+        return self.call( module="Balances", fn="transfer_keep_alive", params=params, key=key, multisig=multisig, safety=safety)
 
+    send = transfer
     
     def dereg(self, key: Keypair, subnet: int=0):
         raise NotImplementedError('not implemented')
@@ -1220,7 +1213,7 @@ class ModChain:
             "network": self.network,
         }
 
-        c.print(f"Call(network={self.network}\nmodule={info_call['module']} \nfn={info_call['fn']} \nkey={key.ss58_address} \nparams={info_call['params']}) \n)", color='cyan')
+        m.print(f"Call(network={self.network}\nmodule={info_call['module']} \nfn={info_call['fn']} \nkey={key.ss58_address} \nparams={info_call['params']}) \n)", color='cyan')
 
         if safety:
             if input('Are you sure you want to send this transaction? (y/n) --> ') != 'y':
@@ -1369,7 +1362,7 @@ class ModChain:
         if multisig == 'sudo':
             return self.sudo_multisig_data
         if isinstance(multisig, str):
-            multisig = c.get(self.get_multisig_path(multisig))
+            multisig = m.get(self.get_multisig_path(multisig))
             assert isinstance(multisig, dict)
         return multisig
 
@@ -1408,7 +1401,7 @@ class ModChain:
         }
         assert self.check_multisig(multisig)
         path = self.get_multisig_path(name)
-        return c.put(path, multisig)
+        return m.put(path, multisig)
 
     put_multiisg = add_multisig
     def multisig_exists(self, multisig):
@@ -1420,10 +1413,10 @@ class ModChain:
 
     def multisigs(self):
         path = self.get_path(f'multisig')
-        paths = c.ls(path)
+        paths = m.ls(path)
         multisigs = {}
         for p in paths:
-            multisig = c.get(p, None)
+            multisig = m.get(p, None)
             if multisig != None:
                 multisigs[p.split('/')[-1].split('.')[-2]] = self.get_multisig_data(multisig)
 
@@ -1438,10 +1431,6 @@ class ModChain:
 
     mss = multisigs
 
-    def send(
-        self, key, amount, dest, multisig=None, safety=True
-    ) -> ExtrinsicReceipt:
-        return self.transfer(key=key, amount=amount, dest=dest)
 
     def events(self, block=None, back=None, from_block = None, to_block=None) -> list[dict[str, Any]]:
         """
@@ -1461,15 +1450,15 @@ class ModChain:
             future2block = {}
             for block in range(since, block + 1):
                 path = self.get_path(f'events/{block}')
-                events = c.get(path, None)
+                events = m.get(path, None)
                 if events is not None:
-                    c.print(f"Events for block {block} already cached, returning cached events", color='green')
+                    m.print(f"Events for block {block} already cached, returning cached events", color='green')
                     block2events[block] = events
                     continue
                 print(f"Getting events for block {block}")
-                f = c.submit(self.events, params=dict(block=block), timeout=60)
+                f = m.submit(self.events, params=dict(block=block), timeout=60)
                 future2block[f] = block
-            for future in c.as_completed(future2block):
+            for future in m.as_completed(future2block):
                 block = future2block[future]
                 events = future.result()
                 block2events[block] = events
@@ -1479,9 +1468,9 @@ class ModChain:
 
         block = block or self.block()
         path = self.get_path(f'events/{block}')
-        events = c.get(path, None)
+        events = m.get(path, None)
         if events is not None:
-            c.print(f"Events for block {block} already cached, returning cached events", color='green')
+            m.print(f"Events for block {block} already cached, returning cached events", color='green')
             return events
         block_hash = self.block_hash(block)
         with self.get_conn(init=True) as substrate:
@@ -1491,7 +1480,7 @@ class ModChain:
         events = [e.value for e in events]
         # include the tx hash
 
-        c.put(path, events)
+        m.put(path, events)
         return events
 
 
@@ -1567,12 +1556,12 @@ class ModChain:
 
 
     def metadata(self) -> dict[str, Any]:
-        pallet2fns = self.pallet2fns()
+        pallet2calls = self.pallet2calls()
         pallet2storage = self.pallet2storage()
         metadata = {}
-        for pallet in pallet2fns.keys():
+        for pallet in pallet2calls.keys():
             metadata[pallet] = {
-                'fns': pallet2fns[pallet],
+                'fns': pallet2calls[pallet],
                 'storage': pallet2storage.get(pallet, {})
             }
         return metadata
@@ -1596,36 +1585,125 @@ class ModChain:
 
     def old_balances(self):
         path = "~/.comclassic/balances.json"
-        return c.get_json(path, {})
+        return m.get_json(path, {})
     
     def oldbal(self): 
-        key2address = c.key2address()
+        key2address = m.key2address()
         balances = self.old_balances()
         my_balances = {}
         for key, address in key2address.items():
             if address in balances:
-                my_balances[key] = balances.get(address, 0)//10**9
+                my_balances[key] = balances.get(address, 0)//10**self.decimals
         return my_balances
 
-    def claim(self, key=None):
-        return self.call( module="ComClaim", fn="claim", params={}, key=key)
-
-    def reg(self , name='api', take=0, key='bako'):
-        key = m.key(key)
-        info = c.fn('api/reg')(name)
-        params = {'name': key.address +info['name'], 'data': info['content'], 'url': info['url'] , 'take': take}
-        return self.call( module="Modules", fn="register_module", params=params, key=key)
-
-    def update(self, name='api', key='bako'):
-        info = c.fn('api/reg')(name)
-        params = {'name': info['name'], 'data': info['content'], 'url': info['url'] }
-        return self.call( module="Modules", fn="update_module", params=params, key=key)
 
     def storage(self, feature='Modules', module='Modules', update=False):
         return self.query_map(feature, module=module, update=update)
 
-    def mods(self, update=False):
-        mods = self.storage(feature='Modules', module='Modules', update=update)
-        return mods
+    ## MODCHAIN STUFF
+    def format_mod_info(self, mod_info):
+        mod_info['collateral'] = self.format_amount(mod_info.get('collateral', 0), fmt='j')
+        return mod_info
 
+    def mods(self, update=False):
+        mods =  list(self.storage(feature='Modules', module='Modules', update=update).values())
+        mods = [self.format_mod_info(mod) for mod in mods]
+        return mods
+        
+    def claim(self, key=None):
+        return self.call( module="ComClaim", fn="claim", params={}, key=key)
+
+    def reg(self , name='api', take=0, key=None, update=False):
+        modstruct = self.modstruct(name, key=key, update=update)
+        return self.call( module="Modules", fn="register_module", params=modstruct, key=key)
+
+    def modstruct(self, name='api', key=None, update=False, take=0):
+        info = m.fn('api/reg')(name, update=update, key=key)
+        params = {
+                'name': info['name'] + '/' + info['key']  , 
+                'data': info['cid'], 
+                'url': info['url'] ,
+                'take': take
+                }
+        return params
+
+    def modid(self, name='api', key=None, update=False):
+        key = m.key(key)
+        mods = self.mymods(key=key, update=update)
+        module_id = None
+        for mod in mods:
+            if mod['name'] == f'{key.address}/{name}' or mod['name'] == f'{name}/{key.address}':
+                module_id = mod['id']
+                break
+        assert module_id is not None, f"Module {name} not found for key {key}"
+        return module_id
+
+    def update(self, name='api', take=0, key=None, update=False):
+        modstruct = self.modstruct(name=name, key=key, update=update)
+        mods = self.mymods(key=key, update=update)
+        module_id = self.modid(name=name, key=key, update=update)
+        return self.call( module="Modules", fn="update_module", params=modstruct, key=key)
+
+    def key2mods(self, key=None, update=False):
+        key = m.key(key)
+        mods = self.mods(update=update)
+        key2mods = {}
+        for mod in mods:
+            mod_name = mod['name'].replace(f'{key.address}/', '').replace(f'/{key.address}', '')
+            key_address = mod['owner']
+            key2mods[key_address] = key2mods.get(key_address, []) + [mod]
+        return key2mods
+        
+
+    def exists(self, name='api', key=None, update=False):
+        """
+        whether the module exists
+        """
+        key = m.key(key)
+        mods = self.mymods(key=key, update=update)
+        for mod in mods:
+            if mod['name'] in [f'{key.address}/{name}' , f'{name}/{key.address}' ] :
+                return True
+        return False
+
+    def key2address(self):
+        return  m.key2address()
+    
+    def my_addresses(self):
+        return list(self.key2address().keys())
+    
+    def mybalances(self, fmt='j', update=False):
+        balances = self.balances(fmt=fmt, update=update)
+        my_balances = {}
+        for key, addr in self.key2address().items():
+            if addr in balances:
+                my_balances[key] = balances[addr]
+        return my_balances
+
+    def mymods(self, key=None, update=False):
+        key = m.key(key)
+        mods = self.mods(update=update)
+        is_my_mod = lambda mod_info: mod_info['name'].startswith(key.address) or mod_info.get('owner') == key.address
+        return list(filter(is_my_mod, mods))
+
+    def mykey2mods(self, update=False):
+        key2mods = self.key2mods(update=update)
+        my_key2mods = {}
+        key2address = m.key2address()
+        for key_str, address in key2address.items():
+            if address in key2mods:
+                my_key2mods[address] = key2mods.get(address, [])
+        return my_key2mods
+
+    def mod(self, name='api', key=None, update=False):
+        mod_id = self.modid(name=name, key=key, update=update)
+        mods = self.mods(update=update)
+        mod = mods[mod_id]
+        info = m.fn('api/mod')(name, key=key)
+        
+        return info
+    
+        
+    myk2m = mykey2mods
     # def modules()
+
