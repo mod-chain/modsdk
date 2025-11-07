@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Client } from '@/app/block/client/client'
 import { Loading } from '@/app/block/Loading'
-import { ModuleType } from '@/app/types'
+import { ModType } from '@/app/types'
 import { useUserContext } from '@/app/block/context/UserContext'
 import {
   CodeBracketIcon,
@@ -17,42 +17,41 @@ import {
 } from '@heroicons/react/24/outline'
 import { Globe } from 'lucide-react'
 import { CopyButton } from '@/app/block/CopyButton'
-import { ModuleContent } from '@/app/mod/[mod]/[key]/ModuleContent'
-import ModuleSchema from '@/app/mod/[mod]/[key]/ModuleApi'
-import { ModuleApp } from '@/app/mod/[mod]/[key]/ModuleApp'
+import { ModContent } from './tabs/ModContent'
+import ModApi from './tabs/ModApi'
+import { ModApp } from './tabs/ModApp'
 import { motion, AnimatePresence } from 'framer-motion'
 import { time2str, text2color, shorten } from '@/app/utils'
 type TabType = 'app' | 'api' | 'content'
 
 
-export default function Module({ params }: { params: { mod: string, key: string } }){
+export default function Mod({ params }: { params: { mod: string, key: string } }){
 
   const module_name = params.mod
   const module_key = params.key
-  console.log("params", params)
 
   const { keyInstance, authLoading } = useUserContext()
 
-  const [mod, setModule] = useState<ModuleType | undefined>()
+  const [mod, setMod] = useState<ModType | undefined>()
   const [error, setError] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(true)
   const [syncing, setSyncing] = useState<boolean>(false)
   const [activeTab, setActiveTab] = useState<TabType>('api')
   const [hasFetched, setHasFetched] = useState(false)
 
-  const fetchModule = useCallback(async (update = false) => {
+  const fetchMod = useCallback(async (update = false) => {
     try {
       update ? setSyncing(true) : setLoading(true)
       const client = new Client(undefined, keyInstance)
       const params = { mod: module_name, content: true , schema: true, key:module_key}
-      const foundModule = await client.call('mod', params)
-      console.log("fetched module", foundModule)
+      const foundMod = await client.call('mod', params)
+      console.log("fetched module", foundMod)
 
-      if (foundModule) {
-        setModule(foundModule as ModuleType)
+      if (foundMod) {
+        setMod(foundMod as ModType)
         setError('')
       } else {
-        setError(`Module ${module_name} not found`)
+        setError(`Mod ${module_name} not found`)
       }
     } catch (err: any) {
       setError(err?.message || 'Failed to fetch mod')
@@ -65,13 +64,13 @@ export default function Module({ params }: { params: { mod: string, key: string 
   useEffect(() => {
     if ((!hasFetched && !authLoading) || mod === undefined) {
       setHasFetched(true)
-      fetchModule(false)
+      fetchMod(false)
     }
-  }, [hasFetched, fetchModule, authLoading, mod])
+  }, [hasFetched, fetchMod, authLoading, mod])
 
   const handleSync = useCallback(() => {
-    fetchModule(true)
-  }, [fetchModule])
+    fetchMod(true)
+  }, [fetchMod])
 
   if (authLoading || loading || mod === undefined) return <Loading />
 
@@ -155,7 +154,7 @@ export default function Module({ params }: { params: { mod: string, key: string 
                 <Icon className="h-5 w-5 relative z-10" style={{ color: active ? moduleColor : `${moduleColor}80` }} />
                 {id === 'content' && <Globe className="h-5 w-5 relative z-10" style={{ color: active ? moduleColor : `${moduleColor}80` }} />}
                 <span className="relative z-10 uppercase tracking-wide" style={{ color: active ? moduleColor : `${moduleColor}80` }}>
-                  {id === 'content' ? 'MODS' : label}
+                  {id === 'content' ? 'CONTENT' : label}
                 </span>
                 {active && (
                   <motion.div layoutId="activeTabBorder" className="absolute bottom-0 left-0 right-0 h-1" style={{ backgroundColor: moduleColor }} />
@@ -177,7 +176,7 @@ export default function Module({ params }: { params: { mod: string, key: string 
             {activeTab === 'app' && (
               mod.url_app ? (
                 <div className="w-full rounded-lg border border-white/10 overflow-hidden">
-                  <ModuleApp mod={mod} moduleColor={moduleColor} />
+                  <ModApp mod={mod} moduleColor={moduleColor} />
                 </div>
               ) : (
                 <div className="h-[400px] flex items-center justify-center text-xl text-white/70">
@@ -190,7 +189,7 @@ export default function Module({ params }: { params: { mod: string, key: string 
             )}
             {activeTab === 'content' && (
               <div className="w-full">
-                <ModuleContent
+                <ModContent
                   files={mod.content || {}}
                   showSearch={true}
                   compactMode={false}
@@ -200,7 +199,7 @@ export default function Module({ params }: { params: { mod: string, key: string 
 
             {activeTab === 'api' && (
               <div className="w-full rounded-lg border border-white/10">
-                <ModuleSchema mod={mod} />
+                <ModApi mod={mod} />
               </div>
             )}
           </motion.div>

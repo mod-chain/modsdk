@@ -58,7 +58,6 @@ export const ModuleCaller = ({ keyInstance }: ModuleCallerProps) => {
 
 
       const responseData = await apiResponse.json()
-      console.log('API Response:', responseData)
       setResponse(responseData)
       
       if (!apiResponse.ok) {

@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Client } from '@/app/block/client/client'
 import { Loading } from '@/app/block/Loading'
-import ModuleCard from './ModuleCard'
+import ModCard from './ModCard'
 import { ModuleType } from '@/app/types'
 import { Footer } from '@/app/block/footer/Footer'
 import { useSearchContext } from '@/app/block/context/SearchContext'
@@ -207,10 +207,10 @@ export default function Modules() {
         <div className={`mx-auto max-w-7xl grid ${gridColsClass} gap-6`}>
           {mods.map((mod) => (
             <div
-              key={`${mod.key}-${mod.name}`}
+              key={`${mod.name}-${mod.key}`}
               className="transform hover:scale-[1.02] transition-all duration-300 ease-out"
             >
-              <ModuleCard mod={mod} />
+              <ModCard mod={mod} />
             </div>
           ))}
         </div>

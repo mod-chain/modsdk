@@ -9,17 +9,7 @@ export function SearchHeader() {
   const { handleSearch } = useSearchContext()
   const router = useRouter()
   const [inputValue, setInputValue] = useState('')
-  const [isNarrow, setIsNarrow] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
-
-  useEffect(() => {
-    const checkWidth = () => {
-      setIsNarrow(window.innerWidth < 640)
-    }
-    checkWidth()
-    window.addEventListener('resize', checkWidth)
-    return () => window.removeEventListener('resize', checkWidth)
-  }, [])
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -58,60 +48,39 @@ export function SearchHeader() {
     }
   }
 
-  if (isNarrow) {
-    return (
-      <form onSubmit={onSubmit} className="flex items-center">
-        {!isExpanded ? (
+  return (
+    <form onSubmit={onSubmit} className="flex items-center">
+      {!isExpanded ? (
+        <button
+          type="button"
+          onClick={toggleExpand}
+          className="p-3 rounded-lg border-2 border-white/40 bg-white/15 hover:bg-white/20 hover:border-white/50 transition-all hover:scale-110 active:scale-95"
+          style={{height: '56px', width: '56px'}}
+        >
+          <MagnifyingGlassIcon className="w-6 h-6 text-white" />
+        </button>
+      ) : (
+        <div className="relative animate-in fade-in slide-in-from-left-2 duration-300">
+          <input
+            type="text"
+            value={inputValue}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Search mods..."
+            autoFocus
+            className="bg-white/15 border-3 border-white/40 text-white px-6 py-4 pl-14 pr-14 rounded-xl text-xl font-bold hover:bg-white/20 hover:border-white/50 focus:outline-none focus:ring-3 focus:ring-white/60 focus:border-white/60 transition-all shadow-xl shadow-black/30"
+            style={{height: '56px', width: '320px'}}
+          />
+          <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-white/80" />
           <button
             type="button"
             onClick={toggleExpand}
-            className="p-3 rounded-lg border border-white/40 bg-white/15 hover:bg-white/20 hover:border-white/50 transition-all"
-            style={{height: '56px', width: '56px'}}
+            className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded transition-all hover:scale-110 active:scale-95"
           >
-            <MagnifyingGlassIcon className="w-6 h-6 text-white" />
+            <XMarkIcon className="w-6 h-6 text-white/80" />
           </button>
-        ) : (
-          <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-start pt-4 px-4">
-            <div className="relative w-full">
-              <input
-                type="text"
-                value={inputValue}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                placeholder="Search mods..."
-                autoFocus
-                className="w-full bg-white/15 border-3 border-white/40 text-white px-6 py-4 pl-14 pr-14 rounded-xl text-xl font-bold hover:bg-white/20 hover:border-white/50 focus:outline-none focus:ring-3 focus:ring-white/60 focus:border-white/60 transition-all shadow-xl shadow-black/30"
-                style={{height: '56px'}}
-              />
-              <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-white/80" />
-              <button
-                type="button"
-                onClick={toggleExpand}
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-1 hover:bg-white/10 rounded transition-all"
-              >
-                <XMarkIcon className="w-6 h-6 text-white/80" />
-              </button>
-            </div>
-          </div>
-        )}
-      </form>
-    )
-  }
-
-  return (
-    <form onSubmit={onSubmit} className="flex items-center gap-2">
-      <div className="relative">
-        <input
-          type="text"
-          value={inputValue}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          placeholder="Search mods..."
-          className="bg-white/15 border-3 border-white/40 text-white px-6 py-4 pl-14 rounded-xl text-xl font-bold hover:bg-white/20 hover:border-white/50 focus:outline-none focus:ring-3 focus:ring-white/60 focus:border-white/60 transition-all shadow-xl shadow-black/30"
-          style={{height: '56px', width: '320px'}}
-        />
-        <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-white/80" />
-      </div>
+        </div>
+      )}
     </form>
   )
 }

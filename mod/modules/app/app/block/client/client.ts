@@ -25,8 +25,6 @@ export class Client {
     let start_time = Date.now();
     
     headers = this.auth.generate({'fn': fn, 'params': params}, cost);
-    console.log(`Calling function: ${fn} with params:`, params);
-    console.log(`headers`, headers);
     
     body = JSON.stringify(params);
     headers['Content-Type'] = 'application/json';
@@ -40,9 +38,6 @@ export class Client {
         body: body,
       });
 
-      let delta_seconds = (Date.now() - start_time) / 1000;
-      console.log(`response ${this.url}/${fn} generation took ${delta_seconds} seconds`);
-      console.log(response);
       
       if (!response.ok) {
         if (response.status === 401) {
@@ -82,7 +77,6 @@ export class Client {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      console.log(decoder.decode(value));
     }
   }
 }

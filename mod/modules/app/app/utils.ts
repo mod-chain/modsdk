@@ -1,5 +1,15 @@
 // Safe copy util (SSR/insecure context/older browsers)
 // no "use client" needed; we guard for window
+
+export const USER_COLORS = [
+  { from: 'from-purple-500/20', to: 'to-pink-500/20', text: 'text-purple-400', hover: 'from-purple-400 to-pink-400', border: 'border-purple-500/30' },
+  { from: 'from-blue-500/20', to: 'to-cyan-500/20', text: 'text-blue-400', hover: 'from-blue-400 to-cyan-400', border: 'border-blue-500/30' },
+  { from: 'from-green-500/20', to: 'to-emerald-500/20', text: 'text-green-400', hover: 'from-green-400 to-emerald-400', border: 'border-green-500/30' },
+  { from: 'from-orange-500/20', to: 'to-red-500/20', text: 'text-orange-400', hover: 'from-orange-400 to-red-400', border: 'border-orange-500/30' },
+  { from: 'from-yellow-500/20', to: 'to-amber-500/20', text: 'text-yellow-400', hover: 'from-yellow-400 to-amber-400', border: 'border-yellow-500/30' },
+  { from: 'from-indigo-500/20', to: 'to-violet-500/20', text: 'text-indigo-400', hover: 'from-indigo-400 to-violet-400', border: 'border-indigo-500/30' },
+]
+
 export async function copyToClipboard(text: string): Promise<boolean> {
   if (typeof window === 'undefined' || typeof document === 'undefined') return false;
   try {
@@ -26,10 +36,12 @@ export async function copyToClipboard(text: string): Promise<boolean> {
 }
 
 
-export const shorten = (str: string, len: number = 4): string => {
-  if (!str || str.length <= len) return str
-  return `${str.slice(0, len)}...`
+export const shorten = (str: string, leading: number = 4, trailing: number = 0): string => {
+  const leadingPart = str.slice(0, leading)
+  const trailingPart = trailing > 0 ? str.slice(-trailing) : ''
+  return trailing > 0 ? `${leadingPart}...${trailingPart}` : `${leadingPart}...`
 }
+
 
 export const time2str = (time: number): string => {
   const now = Math.floor(Date.now() / 1000)

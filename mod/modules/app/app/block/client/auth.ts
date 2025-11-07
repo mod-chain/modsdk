@@ -125,7 +125,6 @@ export class Auth {
       signature: headers.signature,
       public_key: headers.key,
     };
-    console.log('params', params);
 
     let verified = this.key.verify(params.message, params.signature, params.public_key);
 

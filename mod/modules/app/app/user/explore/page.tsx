@@ -7,13 +7,25 @@ import { useSearchContext } from '@/app/block/context/SearchContext'
 import { useUserContext } from '@/app/block/context/UserContext'
 import { UsersState, UserType } from '@/app/types'
 import { UserCard } from './UserCard'
-import { Users as UsersIcon, AlertCircle, Sparkles, ChevronDown, ChevronUp, LayoutGrid } from 'lucide-react'
+import { Users as UsersIcon, AlertCircle, Sparkles, ChevronDown, ChevronUp, LayoutGrid , Zap, Coins} from 'lucide-react'
+
+
 
 export default function Users() {
   const { keyInstance, client } = useUserContext()
   const { searchFilters } = useSearchContext()
-  const [columns, setColumnsPerRow] = useState(3)
+  const [columns, setColumns] = useState(3)
   const [advancedOpen, setAdvancedOpen] = useState(false)
+  const [sort, setSort] = useState<'mods' | 'balance'>('mods')
+
+  const sortUsers = (list: UserType[]) => {
+    switch (sort) {
+      case 'mods':
+        return [...list].sort((a, b) => (b.mods?.length || 0) - (a.mods?.length || 0))
+      case 'balance':
+        return [...list].sort((a, b) => (b.balance || 0) - (a.balance || 0))
+    }
+  }
 
   const [state, setState] = useState<UsersState>({
     users: [],
@@ -34,8 +46,8 @@ export default function Users() {
         page_size: pageSize,
         ...(searchFilters.searchTerm ? { search: searchFilters.searchTerm } : {}),
       }
-      const usersData: UserType[] = await client.call('users', params)
-      setState({ users: usersData, n: usersData.length, loading: false, error: null })
+      let usersData: UserType[] = await client.call('users', params)
+      setState({ users: sortUsers(usersData), n: usersData.length, loading: false, error: null })
     } catch (err: any) {
       setState({
         users: [],
@@ -48,7 +60,7 @@ export default function Users() {
 
   useEffect(() => {
     if (client) fetchUsers()
-  }, [searchFilters.searchTerm, page, pageSize, client])
+  }, [searchFilters.searchTerm, page, pageSize, client, sort])
 
   const gridColsClass = {
     1: 'grid-cols-1',
@@ -73,8 +85,7 @@ export default function Users() {
                   <Sparkles className="text-purple-300" size={28} strokeWidth={2.5} />
                 </div>
                 <div className="text-left">
-                  <div className="text-purple-300 font-black text-2xl uppercase tracking-wider drop-shadow-lg">ADVANCED SETTINGS</div>
-                  <div className="text-purple-400/70 font-bold text-sm uppercase tracking-wide">Customize your view</div>
+                  <div className="text-purple-300 font-black text-2xl uppercase tracking-wider drop-shadow-lg"> SETTINGS</div>
                 </div>
               </div>
               <div className="p-3 bg-gradient-to-br from-purple-500/30 to-pink-500/30 border-2 border-purple-400/50 rounded-xl group-hover:rotate-180 transition-all duration-500 shadow-lg shadow-purple-500/30">
@@ -86,15 +97,38 @@ export default function Users() {
               <div className="border-t-2 border-purple-500/30 p-6 bg-black/40 backdrop-blur-sm animate-in slide-in-from-top duration-300">
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
                   <div className="flex-1 w-full">
+                    <div className="text-purple-300 font-black text-sm uppercase tracking-wider mb-4 flex items-center gap-2">
+                      <Zap className="text-purple-400" size={18} strokeWidth={2.5} />
+                      SORT BY
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      {(['mods', 'balance'] as SortKey[]).map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => setSort(s)}
+                          className={`px-6 py-3 rounded-xl font-black text-base uppercase transition-all duration-300 flex items-center gap-2 ${
+                            sort === s
+                              ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border-2 border-purple-300 shadow-2xl shadow-purple-500/50 scale-110'
+                              : 'bg-purple-500/20 text-purple-300 border-2 border-purple-500/40 hover:bg-purple-500/30 hover:scale-105 hover:border-purple-400/60'
+                          }`}
+                        >
+                          {s === 'balance' && <Coins size={18} strokeWidth={2.5} />}
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex-1 w-full">
                     <div className="text-blue-300 font-black text-sm uppercase tracking-wider mb-4 flex items-center gap-2">
-                      <div className="w-1 h-5 bg-gradient-to-b from-blue-400 to-cyan-400 rounded-full"></div>
-                      GRID LAYOUT
+                      <Zap className="text-blue-400" size={18} strokeWidth={2.5} />
+                      COLUMNS
                     </div>
                     <div className="flex flex-wrap gap-3">
                       {[1, 2, 3, 4].map((num) => (
                         <button
                           key={num}
-                          onClick={() => setColumnsPerRow(num)}
+                          onClick={() => setColumns(num)}
                           className={`w-14 h-14 rounded-xl font-black text-2xl transition-all duration-300 ${
                             columns === num
                               ? 'bg-gradient-to-br from-blue-500 to-cyan-500 text-white border-2 border-blue-300 shadow-2xl shadow-blue-500/50 scale-110'

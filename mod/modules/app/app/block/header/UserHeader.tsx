@@ -2,22 +2,25 @@
 
 import { useState } from 'react'
 import { useUserContext } from '@/app/block/context/UserContext'
-import { UserIcon, ArrowRightOnRectangleIcon, KeyIcon, CurrencyDollarIcon, CubeIcon } from '@heroicons/react/24/outline'
+import { UserIcon, ArrowRightOnRectangleIcon, KeyIcon } from '@heroicons/react/24/outline'
 import { CopyButton } from '@/app/block/CopyButton'
 import 'react-responsive-modal/styles.css'
 import {text2color, shorten} from "@/app/utils";
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 export function UserHeader() {
-  const { keyInstance, setKeyInstance, user, authLoading, signIn, signOut } = useUserContext()
+  const { keyInstance, user, authLoading, signIn, signOut } = useUserContext()
   const [showPasswordInput, setShowPasswordInput] = useState(false)
   const [password, setPassword] = useState('')
   const [isSigningIn, setIsSigningIn] = useState(false)
-  const [showTooltip, setShowTooltip] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
+  const router = useRouter()
 
   const handleSignOut = () => {
     signOut()
     setShowPasswordInput(true)
+    setIsExpanded(false)
   }
 
   const handleSignIn = async () => {
@@ -34,9 +37,9 @@ export function UserHeader() {
     }
   }
 
-  const handleCopy = () => {
+  const handleUserClick = () => {
     if (keyInstance?.address) {
-      navigator.clipboard.writeText(keyInstance.address)
+      router.push(`/user/${keyInstance.address}`)
     }
   }
 
@@ -102,97 +105,91 @@ export function UserHeader() {
     )
   }
 
-  const userAddress = keyInstance.address
-  const userColor = text2color(userAddress)
-  const balance = user?.balance || 0
-  const modsCount = user?.mods?.length || 0
-  const displayAddress = userAddress.length > 12 ? `${userAddress.slice(0, 6)}...${userAddress.slice(-4)}` : userAddress
+  const userColor = text2color(keyInstance.address)
 
   return (
-    <div className="relative">
+    <div 
+      className="relative"
+      onMouseEnter={() => setIsExpanded(true)}
+      onMouseLeave={() => setIsExpanded(false)}
+    >
       <div
-        className="flex items-center gap-3 px-6 py-4 rounded-2xl border-2 transition-all hover:shadow-2xl backdrop-blur-xl"
+        onClick={handleUserClick}
+        className="flex items-center gap-3 transition-all duration-300 backdrop-blur-xl rounded-2xl border-2 overflow-hidden cursor-pointer"
         style={{
           borderColor: `${userColor}80`,
           backgroundColor: `${userColor}15`,
           boxShadow: `0 0 20px ${userColor}30`,
-          height: '60px'
+          height: '60px',
+          width: isExpanded ? 'auto' : '60px',
+          paddingRight: isExpanded ? '16px' : '0',
         }}
-        onMouseEnter={() => setShowTooltip(true)}
-        onMouseLeave={() => setShowTooltip(false)}
       >
-        <Link href={`/user/${userAddress}`} className="flex items-center gap-3 cursor-pointer hover:scale-105 active:scale-95 transition-all">
-          <div className="p-2 rounded-lg" style={{ backgroundColor: `${userColor}30` }}>
-            <UserIcon className="w-6 h-6" style={{ color: userColor }} />
+        <div 
+          className="p-4 transition-all hover:scale-110 active:scale-95 flex-shrink-0"
+          style={{
+            height: '60px',
+            width: '60px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <UserIcon className="w-7 h-7" style={{ color: userColor }} />
+        </div>
+
+        <div 
+          className="flex items-center gap-4 transition-all duration-300"
+          style={{
+            opacity: isExpanded ? 1 : 0,
+            width: isExpanded ? 'auto' : '0',
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {user?.balance !== undefined && (
+            <div className="flex flex-col">
+              <div className="text-xs text-white/60 font-bold uppercase tracking-wider">Balance</div>
+              <div className="font-black text-lg" style={{ color: userColor }}>
+                {user.balance.toFixed(2)}
+              </div>
+            </div>
+          )}
+
+          {user?.mods && user.mods.length > 0 && (
+            <div className="flex flex-col">
+              <div className="text-xs text-white/60 font-bold uppercase tracking-wider">Mods</div>
+              <div className="font-black text-lg" style={{ color: userColor }}>
+                {user.mods.length}
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col min-w-[200px]">
+            <div className="flex items-center gap-2">
+              <KeyIcon className="w-4 h-4" style={{ color: userColor }} />
+              <div className="font-mono font-black text-sm truncate max-w-[180px]" style={{ color: userColor }}>
+
+                {shorten(keyInstance.address, 8, 8)}
+              </div>
+              <CopyButton content={shorten(keyInstance.address)} size="sm" style={{color: userColor}} />
+            </div>
           </div>
-          <span 
-            className="font-mono font-black text-lg cursor-pointer select-all uppercase tracking-wide drop-shadow-lg"
-            style={{ color: userColor }}
+
+          <button
             onClick={(e) => {
               e.preventDefault()
-              handleCopy()
+              e.stopPropagation()
+              handleSignOut()
             }}
-            title="Click to copy full address"
+            className="p-3 rounded-xl hover:bg-red-500/20 transition-all group border-2 border-transparent hover:border-red-500/40 hover:scale-110 active:scale-95 flex-shrink-0"
+            style={{height: '48px', width: '48px'}}
+            title="Sign Out"
           >
-            {displayAddress}
-          </span>
-        </Link>
-        
-        <button
-          onClick={handleCopy}
-          className="p-2 rounded-lg hover:bg-white/10 transition-all"
-          title="Copy address"
-        >
-          <CopyButton content={userAddress} size="sm" style={{color: 'white'}} />
-        </button>
-
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: `${userColor}20` }}>
-          <KeyIcon className="w-5 h-5" style={{ color: userColor }} />
+            <ArrowRightOnRectangleIcon className="w-6 h-6 text-red-500 font-black group-hover:translate-x-0.5 transition-transform" />
+          </button>
         </div>
-        
-        <button
-          onClick={(e) => {
-            e.preventDefault()
-            handleSignOut()
-          }}
-          className="p-3 rounded-lg hover:bg-red-500/20 transition-all group border-2 border-transparent hover:border-red-500/40"
-          title="Sign Out"
-        >
-          <ArrowRightOnRectangleIcon className="w-6 h-6 text-red-500 font-black group-hover:translate-x-0.5 group-hover:scale-110 transition-transform" />
-        </button>
       </div>
-      
-      {showTooltip && (
-        <div 
-          className="absolute top-full left-0 mt-2 px-5 py-4 rounded-xl border-2 backdrop-blur-xl z-50 animate-in fade-in slide-in-from-top-2 duration-200"
-          style={{
-            borderColor: `${userColor}80`,
-            backgroundColor: `${userColor}20`,
-            boxShadow: `0 8px 24px ${userColor}40`,
-            minWidth: '220px'
-          }}
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 rounded-lg" style={{ backgroundColor: `${userColor}40` }}>
-              <CurrencyDollarIcon className="w-6 h-6" style={{ color: userColor }} />
-            </div>
-            <div>
-              <div className="text-xs text-white/70 font-bold uppercase tracking-wider">Balance</div>
-              <div className="font-black text-xl" style={{ color: userColor }}>{balance}</div>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg" style={{ backgroundColor: `${userColor}40` }}>
-              <CubeIcon className="w-6 h-6" style={{ color: userColor }} />
-            </div>
-            <div>
-              <div className="text-xs text-white/70 font-bold uppercase tracking-wider">Mods</div>
-              <div className="font-black text-xl" style={{ color: userColor }}>{modsCount}</div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

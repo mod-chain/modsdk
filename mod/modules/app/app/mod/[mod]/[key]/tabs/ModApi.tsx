@@ -36,7 +36,7 @@ const ui = {
   danger:   '#ff3b30',
 };
 
-export const ModuleSchema = ({ mod }: { mod: any }) => {
+export const ModApi = ({ mod }: { mod: any }) => {
   const { keyInstance } = useUserContext();
 
   const schema: Record<string, SchemaType> = mod?.schema || {};
@@ -442,4 +442,4 @@ export const ModuleSchema = ({ mod }: { mod: any }) => {
   );
 };
 
-export default ModuleSchema;
+export default ModApi;

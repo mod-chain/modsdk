@@ -8,7 +8,7 @@ import {
   MusicalNoteIcon, ArchiveBoxIcon, DocumentChartBarIcon, ClipboardDocumentIcon
 } from '@heroicons/react/24/outline';
 
-interface ModuleContentProps {
+interface ModContentProps {
   files: Record<string, string>;
   title?: string;
   showSearch?: boolean;
@@ -69,14 +69,12 @@ const languageColors: Record<string, string> = {
 const formatFileSize = (bytes: number): string =>
   bytes < 1024 ? `${bytes} B` : bytes < 1048576 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1048576).toFixed(1)} MB`;
 
-/** fast, browser-safe 32-bit FNV-1a hash → 8-hex */
 const hashShort = (str: string): string => {
   let h = 0x811c9dc5;
   for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24); }
   return ('0000000' + (h >>> 0).toString(16)).slice(-8);
 };
 
-/** build sorted file tree (folders first, A→Z) */
 const buildFileTree = (files: Record<string, string>): FileNode[] => {
   const root: FileNode = { name: '', path: '', type: 'folder', children: [] };
 
@@ -114,7 +112,6 @@ const buildFileTree = (files: Record<string, string>): FileNode[] => {
   return root.children || [];
 };
 
-/** safer highlighter (no regex.lastIndex bug) */
 const highlightSearchTerm = (text: string, term: string) => {
   if (!term) return text;
   const safe = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -210,7 +207,7 @@ function FileTreeItem({
   );
 }
 
-export const ModuleContent: React.FC<ModuleContentProps> = ({
+export const ModContent: React.FC<ModContentProps> = ({
   files,
   showSearch = true,
   showFileTree = true,
@@ -226,7 +223,6 @@ export const ModuleContent: React.FC<ModuleContentProps> = ({
   const [searchResults, setSearchResults] = useState<{ path: string; lineNumbers: number[] }[]>([]);
   const codeRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // build tree (sorted)
   useEffect(() => {
     const tree = buildFileTree(files);
     setFileTree(tree);
@@ -239,7 +235,6 @@ export const ModuleContent: React.FC<ModuleContentProps> = ({
     }
   }, [files, defaultExpandedFolders]);
 
-  // expand folders for file filter
   useEffect(() => {
     if (!fileSearchTerm) return;
     const folders = new Set<string>();
@@ -255,7 +250,6 @@ export const ModuleContent: React.FC<ModuleContentProps> = ({
     setExpandedFolders((prev) => new Set([...prev, ...folders]));
   }, [fileSearchTerm, fileTree]);
 
-  // search in file contents
   useEffect(() => {
     if (!searchTerm) { setSearchResults([]); return; }
 
@@ -268,7 +262,7 @@ export const ModuleContent: React.FC<ModuleContentProps> = ({
       if (matchLines.length) results.push({ path, lineNumbers: matchLines });
     });
     setSearchResults(results);
-    setCollapsedFiles(new Set()); // expand files with matches
+    setCollapsedFiles(new Set());
   }, [searchTerm, files]);
 
   const fileSections = useMemo(() =>
@@ -365,7 +359,6 @@ export const ModuleContent: React.FC<ModuleContentProps> = ({
 
   return (
     <div className="overflow-hidden rounded-lg" style={{ backgroundColor: ui.panelAlt }}>
-      {/* Header */}
       <div className="px-4 py-3" style={{ backgroundColor: ui.panel, borderBottom: `1px solid ${ui.border}` }}>
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-4 text-xs" style={{ color: ui.textDim }}>
@@ -375,7 +368,6 @@ export const ModuleContent: React.FC<ModuleContentProps> = ({
           </div>
         </div>
 
-        {/* Search */}
         {showSearch && (
           <div className="relative">
             <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -396,9 +388,7 @@ export const ModuleContent: React.FC<ModuleContentProps> = ({
         )}
       </div>
 
-      {/* Body */}
       <div className="flex">
-        {/* File tree */}
         {showFileTree && (
           <div className="micro-scroll-y w-64 max-h-[600px] overflow-y-auto border-r p-3"
                style={{ borderColor: ui.border, backgroundColor: ui.panelAlt2 }}>
@@ -459,7 +449,6 @@ export const ModuleContent: React.FC<ModuleContentProps> = ({
           </div>
         )}
 
-        {/* Code view */}
         <div className="micro-scroll-y max-h-[600px] flex-1 overflow-y-auto">
           {filteredSections.map((section) => {
             const isCollapsed = collapsedFiles.has(section.path);
@@ -467,7 +456,6 @@ export const ModuleContent: React.FC<ModuleContentProps> = ({
             const FileIcon = getFileIcon(section.name);
             const matches = searchResults.find((r) => r.path === section.path)?.lineNumbers.length || 0;
 
-            // if a file is selected via tree, only show that
             if (showFileTree && selectedFile && !isSelected) return null;
 
             return (
@@ -476,7 +464,6 @@ export const ModuleContent: React.FC<ModuleContentProps> = ({
                 ref={(el) => { codeRefs.current[section.path] = el; }}
                 className={`${isSelected ? 'bg-emerald-900/10' : ''} ${matches ? 'ring-1 ring-yellow-400/30' : ''}`}
               >
-                {/* File header */}
                 <div
                   className="flex cursor-pointer items-center justify-between bg-black/30 p-3 hover:bg-black/45"
                   onClick={() => toggleFile(section.path)}
@@ -500,7 +487,6 @@ export const ModuleContent: React.FC<ModuleContentProps> = ({
                   </div>
                 </div>
 
-                {/* File content */}
                 {!isCollapsed && (
                   <div className="flex" style={{ backgroundColor: '#0a0a0a' }}>
                     {!compactMode && renderLineNumbers(section.content, 1, section.path)}
@@ -515,13 +501,12 @@ export const ModuleContent: React.FC<ModuleContentProps> = ({
         </div>
       </div>
 
-      {/* Footer */}
       {!compactMode && (
         <div className="flex items-center justify-between px-4 py-3"
              style={{ backgroundColor: ui.panel, borderTop: `1px solid ${ui.border}` }}>
           <div className="text-xs" style={{ color: ui.textDim }}>
             {searchTerm && searchResults.length > 0 && (
-              <span>Found “{searchTerm}” in {searchResults.length} files</span>
+              <span>Found "{searchTerm}" in {searchResults.length} files</span>
             )}
           </div>
           <button
@@ -537,7 +522,6 @@ export const ModuleContent: React.FC<ModuleContentProps> = ({
         </div>
       )}
 
-      {/* subtle, hover-only scrollbars + edge-fade for horizontal areas */}
       <style jsx>{`
         .micro-scroll {
           scrollbar-width: thin;
@@ -569,5 +553,3 @@ export const ModuleContent: React.FC<ModuleContentProps> = ({
     </div>
   );
 };
-
-export default ModuleContent;
