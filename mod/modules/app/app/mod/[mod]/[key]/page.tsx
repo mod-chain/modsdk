@@ -82,11 +82,11 @@ export default function Mod({ params }: { params: { mod: string, key: string } }
     { id: 'content', icon: CodeBracketIcon, label: 'CONTENT' },
   ]
   
-  return (  return (
+  return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white mod-page w-full">
       <div className="w-full max-w-full">
         <div className="w-full px-4 py-4 border-b border-white/10 bg-black/95 backdrop-blur-sm">
-          <div className="flex flex-wrap items-center gap-3">          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <span
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-2xl font-bold"
               style={{ color: moduleColor, backgroundColor: `${moduleColor}14`, border: `2px solid ${moduleColor}33` }}
@@ -139,7 +139,7 @@ export default function Mod({ params }: { params: { mod: string, key: string } }
           </div>
         </div>
 
-        <div className="flex border-b border-white/10 bg-black/90">        <div className="flex border-b border-white/10 bg-black/95 backdrop-blur-sm">
+        <div className="flex border-b border-white/10 bg-black/95 backdrop-blur-sm">
           {tabs.map(({ id, icon: Icon, label }) => {
             const active = activeTab === id
             return (
@@ -162,9 +162,9 @@ export default function Mod({ params }: { params: { mod: string, key: string } }
               </button>
             )
           })}
-        </div>        </div>
+        </div>
 
-        <AnimatePresence mode="wait">        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
             initial={{ opacity: 0, y: 10 }}
@@ -203,7 +203,7 @@ export default function Mod({ params }: { params: { mod: string, key: string } }
               </div>
             )}
           </motion.div>
-        </AnimatePresence>        </AnimatePresence>
+        </AnimatePresence>
       </div>
     </div>
   )

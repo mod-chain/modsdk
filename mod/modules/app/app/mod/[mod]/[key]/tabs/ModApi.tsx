@@ -23,7 +23,7 @@ type SchemaType = {
 };
 type TabType = 'run' | 'code';
 
-const ui = {  const ui = {
+const ui  = {
     bg: '#0a0a0a',
     panel: '#0f0f0f',
     panelAlt: '#141414',
@@ -33,7 +33,7 @@ const ui = {  const ui = {
     focus: '#3a86ff',
     accent: '#ffffff',
     danger: '#ff3b30',
-  };};
+  };
 
 export const ModApi = ({ mod }: { mod: any }) => {
   const { keyInstance } = useUserContext();
