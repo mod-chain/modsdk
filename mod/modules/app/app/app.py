@@ -23,7 +23,6 @@ class App:
                     name=mod, 
                     volumes=[f'{cwd}:/app','/app/node_modules'], 
                     cwd=cwd, 
-                    image=image,
                     working_dir=f'/{mod}',
                     daemon=remote, 
                     port=port, 

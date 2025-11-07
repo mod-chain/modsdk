@@ -38,7 +38,6 @@ export default function UserPage() {
       setError(null)
       try {
         const userData = await client.call('user_info', { key: userKey })
-        console.log('Fetched user data:', userData)
         setUser(userData as UserType)
       } catch (err: any) {
         console.error('Error fetching user:', err)

@@ -105,13 +105,15 @@ class PM:
         if self.server_exists(name):
             self.kill(name)
         # Build the service configuration
+  
+        if image == None:
+            image = self.ensure_image(mod=name, tag=tag)
+
         serve_config = {
             'image': image,
             'container_name': name,
             'restart': restart
         }
-        if image == None:
-            image = self.ensure_image(mod=name, tag=tag)
         # Handle command
         serve_config['deploy'] = {'resources': resources} if resources else {}
         serve_config['shm_size'] = shm_size
