@@ -2,12 +2,13 @@
 
 import { useState } from 'react'
 import { useUserContext } from '@/app/block/context/UserContext'
-import { UserIcon, ArrowRightOnRectangleIcon, KeyIcon } from '@heroicons/react/24/outline'
+import { UserIcon, ArrowRightOnRectangleIcon, KeyIcon, WalletIcon } from '@heroicons/react/24/outline'
 import { CopyButton } from '@/app/block/CopyButton'
 import 'react-responsive-modal/styles.css'
 import {text2color, shorten} from "@/app/utils";
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import WalletAuthButton from './WalletAuthButton'
 
 export function UserHeader() {
   const { keyInstance, user, authLoading, signIn, signOut } = useUserContext()
@@ -54,58 +55,18 @@ export function UserHeader() {
 
   if (!keyInstance) {
     return (
-      <div className="flex items-center gap-3">
-        {showPasswordInput ? (
-          <div className="flex items-center gap-3 animate-in fade-in slide-in-from-right-2 duration-300">
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSignIn()}
-              placeholder="Enter password"
-              className="px-5 py-3 text-xl bg-black/60 border-2 border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/20 w-64 backdrop-blur-xl transition-all font-bold"
-              style={{height: '60px'}}
-              autoFocus
-            />
-            <button
-              onClick={handleSignIn}
-              disabled={!password.trim() || isSigningIn}
-              className="p-4 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 disabled:from-white/10 disabled:to-white/10 disabled:text-white/40 text-white rounded-xl transition-all shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40 disabled:shadow-none hover:scale-110 active:scale-95"
-              style={{height: '60px', width: '60px'}}
-              title="Sign In"
-            >
-              {isSigningIn ? (
-                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <ArrowRightOnRectangleIcon className="w-7 h-7" />
-              )}
-            </button>
-            <button
-              onClick={() => {
-                setShowPasswordInput(false)
-                setPassword('')
-              }}
-              className="px-5 py-3 text-xl text-white/60 hover:text-white hover:bg-white/10 rounded-xl transition-all font-bold"
-              style={{height: '60px'}}
-            >
-              Cancel
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setShowPasswordInput(true)}
-            className="group p-4 rounded-xl border-2 border-emerald-400/30 bg-gradient-to-r from-emerald-500/10 to-emerald-600/10 hover:from-emerald-500/20 hover:to-emerald-600/20 transition-all text-emerald-400 shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/30 hover:scale-110 active:scale-95"
-            style={{height: '60px', width: '60px'}}
-            title="Sign In"
-          >
-            <KeyIcon className="w-7 h-7 group-hover:rotate-12 transition-transform" />
-          </button>
-        )}
+      <div className="flex items-center gap-4">
+        <WalletAuthButton />
       </div>
     )
   }
 
   const userColor = text2color(keyInstance.address)
+  const walletMode = localStorage.getItem('wallet_mode')
+  const walletType = localStorage.getItem('wallet_type') || keyInstance.crypto_type
+  const displayAddress = walletMode === 'subwallet' 
+    ? localStorage.getItem('wallet_address') || keyInstance.address
+    : keyInstance.address
 
   return (
     <div 
@@ -115,7 +76,7 @@ export function UserHeader() {
     >
       <div
         onClick={handleUserClick}
-        className="flex items-center gap-3 transition-all duration-300 backdrop-blur-xl rounded-2xl border-2 overflow-hidden cursor-pointer"
+        className="flex items-center gap-3 transition-all duration-300 backdrop-blur-xl rounded-2xl border-2 overflow-hidden cursor-pointer hover:shadow-2xl"
         style={{
           borderColor: `${userColor}80`,
           backgroundColor: `${userColor}15`,
@@ -135,7 +96,11 @@ export function UserHeader() {
             justifyContent: 'center'
           }}
         >
-          <UserIcon className="w-7 h-7" style={{ color: userColor }} />
+          {walletMode === 'subwallet' ? (
+            <WalletIcon className="w-7 h-7" style={{ color: userColor }} />
+          ) : (
+            <UserIcon className="w-7 h-7" style={{ color: userColor }} />
+          )}
         </div>
 
         <div 
@@ -147,6 +112,18 @@ export function UserHeader() {
             whiteSpace: 'nowrap',
           }}
         >
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <div className="text-xs text-white/60 font-bold uppercase tracking-wider">Wallet Type</div>
+              <div className="px-2 py-1 rounded-md font-black text-xs uppercase" style={{ backgroundColor: `${userColor}30`, color: userColor }}>
+                {walletType}
+              </div>
+            </div>
+            {walletMode === 'subwallet' && (
+              <div className="text-xs text-white/50 font-mono mt-1">SubWallet Connected</div>
+            )}
+          </div>
+
           {user?.balance !== undefined && (
             <div className="flex flex-col">
               <div className="text-xs text-white/60 font-bold uppercase tracking-wider">Balance</div>
@@ -169,10 +146,9 @@ export function UserHeader() {
             <div className="flex items-center gap-2">
               <KeyIcon className="w-4 h-4" style={{ color: userColor }} />
               <div className="font-mono font-black text-sm truncate max-w-[180px]" style={{ color: userColor }}>
-
-                {shorten(keyInstance.address, 8, 8)}
+                {shorten(displayAddress, 8, 8)}
               </div>
-              <CopyButton content={shorten(keyInstance.address)} size="sm" style={{color: userColor}} />
+              <CopyButton content={displayAddress} size="sm" style={{color: userColor}} />
             </div>
           </div>
 
