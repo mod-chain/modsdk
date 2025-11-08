@@ -12,7 +12,6 @@ from typing import *
 from concurrent.futures._base import Future
 import time
 from tqdm import tqdm
-from .utils import detailed_error
 
 class Task:
     def __init__(self, 
@@ -100,6 +99,14 @@ class Task:
             return self.priority < other
         else:
             raise TypeError(f"Cannot compare Task with {type(other)}")
+
+    def detailed_error(self, e:Exception) -> str:
+        import traceback
+        tb_lines = traceback.format_exception(type(e), e, e.__traceback__)
+        return {
+            'error': str(e),
+            'traceback': ''.join(tb_lines)
+        }
 
 
 NULL_TASK = (sys.maxsize, Task(None, {}))

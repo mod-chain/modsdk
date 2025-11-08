@@ -99,8 +99,8 @@ setup(
     extras_require=extras_require,
     entry_points={
         'console_scripts': [
-            'm=mod:main',
-            'c=mod:main'
+            'm=mod.core.main:run',
+            'c=mod.core.main:run'
         ],
     },
     keywords=['modular', 'sdk', 'machine learning', 'deep-learning', 'crypto'],

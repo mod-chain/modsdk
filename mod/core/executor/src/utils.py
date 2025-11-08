@@ -10,19 +10,6 @@ def new_event_loop() -> 'asyncio.AbstractEventLoop':
     nest_asyncio.apply()
     return loop
 
-def detailed_error(e) -> dict:
-    tb = traceback.extract_tb(e.__traceback__)
-    filename = tb[-1].filename
-    line_no = tb[-1].lineno
-    line_text = tb[-1].line
-    response = {
-        'success': False,
-        'error': str(e),
-        'filename': filename.replace(os.path.expanduser('~'), '~'),
-        'line_no': line_no,
-        'line_text': line_text
-    }   
-    return response
 
 
 def wait(futures:list, timeout:int = None, generator:bool=False, return_dict:bool = True) -> list:
@@ -72,3 +59,10 @@ def as_completed( futures:list, timeout:int=10, **kwargs):
     import concurrent
     return concurrent.futures.as_completed(futures, timeout=timeout)
 
+
+def detailed_error(e:Exception) -> str:
+    tb_lines = traceback.format_exception(type(e), e, e.__traceback__)
+    return {
+        'error': str(e),
+        'traceback': ''.join(tb_lines)
+    }
