@@ -9,16 +9,21 @@ import os
 import sys
 
 # Get the long description from README
-with open('README.md', 'r', encoding='utf-8') as fh:
+this_dir = os.path.abspath(os.path.dirname(__file__))
+readme_path = os.path.join(this_dir, 'README.md')
+with open(readme_path, 'r', encoding='utf-8') as fh:
     long_description = fh.read()
 
-# Get version from mod package
-sys.path.insert(0, os.path.abspath('.'))
-try:
-    from mod import __version__
-    version = __version__
-except ImportError:
-    version = '0.1.0'  # Default version if import fails
+# Get version from mod package if possible
+version = '0.1.0'  # default
+mod_path = os.path.join(this_dir, 'mod', '__init__.py')
+if os.path.exists(mod_path):
+    import re
+    with open(mod_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    match = re.search(r"__version__\s*=\s*['\"]([^'\"]+)['\"]", content)
+    if match:
+        version = match.group(1)
 
 # Core dependencies
 install_requires = [
@@ -27,7 +32,7 @@ install_requires = [
     'sse-starlette>=2.1,<2.3.7',
     'paramiko>=3.5.1',
     'nest_asyncio>=1.6.0',
-    'uvicorn>=0.34.3',
+    'uvicorn>=0.22.0',  # updated to avoid Python 3.12 loop_factory issues
     'scalecodec>=1.2.10,<1.3',
     'aiofiles>=24.1.0',
     'aiohttp>=3.12.13',
@@ -59,7 +64,7 @@ install_requires = [
 ]
 
 # Optional dependencies
-extra_requires = {
+extras_require = {
     'quality': [
         'black==22.3',
         'click==8.0.4',
@@ -70,9 +75,7 @@ extra_requires = {
         'pytest>=7.2.0',
     ],
 }
-
-# Add 'all' extra that includes everything
-extra_requires['all'] = extra_requires['quality'] + extra_requires['testing']
+extras_require['all'] = extras_require['quality'] + extras_require['testing']
 
 setup(
     name='mod',
@@ -90,9 +93,9 @@ setup(
     },
     packages=find_packages(exclude=['tests*', 'docs*']),
     include_package_data=True,
-    python_requires='>=3.8, <3.13',
+    python_requires='>=3.8, <3.13',  # restrict to Python <3.13 to avoid asyncio issues
     install_requires=install_requires,
-    extras_require=extra_requires,
+    extras_require=extras_require,
     entry_points={
         'console_scripts': [
             'm=mod:main',
@@ -108,9 +111,8 @@ setup(
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
-        'Programming Language :: Python :: 3.12',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
-    license='MIT',  # Assuming MIT based on LICENSE file reference
+    license='MIT',
     zip_safe=False,
 )
