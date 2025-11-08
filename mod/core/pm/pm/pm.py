@@ -243,7 +243,7 @@ class PM:
             path = m.dirpath(mod)
             if not self.image_exists(mod):
                 print(f'No image found for {mod}, building...')
-                self.build(tag=image_tag, mod=mod)
+                self.build(mod=mod)
             image_tag = f'{mod}:{tag}' if tag else mod
             return image_tag
         
@@ -301,25 +301,26 @@ class PM:
         return os.system('cd ' + path + ' && ' + cmd)
 
     def build(self,
-              path: Optional[str] = None,
-              tag: Optional[str] = None,
               mod = None,
+              tag: Optional[str] = None,
               verbose: bool = True,
               no_cache: bool = False,
               env: Dict[str, str] = {}) -> Dict[str, Any]:
         """
         Build a Docker image from a Dockerfile.
         """
-        if mod:
-            path = m.dirpath(mod)
-        path = os.path.abspath(path or self.path)
-        if os.path.isdir(path):
-            assert os.path.exists(os.path.join(path, 'Dockerfile'))
-        tag = tag or path.split('/')[-1]
-        cmd = f'docker build -t {tag} .'
+        mod = mod or 'mod'
+        path = m.dirpath(mod)
+        dockerfile_path = self.dockerfile_path(mod)
+        if dockerfile_path is None:
+            return self.build()
+        
+        cmd = f'docker build -t {mod} .'
         if no_cache:
             cmd += ' --no-cache'
-        return os.system('cd ' + path + ' && ' + cmd)
+        cmd = 'cd ' + path + ' && ' + cmd
+        print(cmd)
+        return os.system(cmd)
 
     def enter(self, contianer): 
         cmd = f'docker exec -it {contianer} bash'
