@@ -23,17 +23,17 @@ type SchemaType = {
 };
 type TabType = 'run' | 'code';
 
-const ui  = {
-    bg: '#0a0a0a',
-    panel: '#0f0f0f',
-    panelAlt: '#141414',
-    border: '#2a2a2a',
-    text: '#e7e7e7',
-    textDim: '#a8a8a8',
-    focus: '#3a86ff',
-    accent: '#ffffff',
-    danger: '#ff3b30',
-  };
+const ui = {
+  bg: '#0a0a0a',
+  panel: '#0f0f0f',
+  panelAlt: '#141414',
+  border: '#2a2a2a',
+  text: '#e7e7e7',
+  textDim: '#a8a8a8',
+  focus: '#3a86ff',
+  accent: '#ffffff',
+  danger: '#ff3b30',
+};
 
 export const ModApi = ({ mod }: { mod: any }) => {
   const { keyInstance } = useUserContext();
@@ -134,97 +134,113 @@ export const ModApi = ({ mod }: { mod: any }) => {
   };
 
   return (
-    <div className="flex h-full flex-col font-mono" style={{ backgroundColor: ui.bg }}>
-      <div className="border-b px-4 py-3" style={{ borderColor: ui.border, backgroundColor: ui.panel }}>
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search functions"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-md px-3 py-2 text-sm outline-none transition-all"
-            style={{
-              backgroundColor: ui.panelAlt,
-              color: ui.text,
-              border: `1px solid ${ui.border}`,
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = ui.focus;
-              e.currentTarget.style.boxShadow = `0 0 0 3px ${ui.focus}22`;
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = ui.border;
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-            onKeyDown={(e) => {
-              if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') executeFunction();
-            }}
-          />
-          <MagnifyingGlassIcon
-            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 opacity-60"
-            style={{ color: ui.textDim }}
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="absolute left-3 top-1/2 -translate-y-1/2"
-              aria-label="Clear"
-            >
-              <XMarkIcon className="h-4 w-4" style={{ color: ui.textDim }} />
-            </button>
-          )}
+    <div className="flex h-full" style={{ backgroundColor: ui.bg }}>
+      {/* Left Side - Function Tabs & Search */}
+      <div className="w-80 border-r flex flex-col" style={{ borderColor: ui.border, backgroundColor: ui.panel }}>
+        <div className="border-b px-4 py-3" style={{ borderColor: ui.border }}>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search functions"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-md px-3 py-2 text-sm outline-none transition-all"
+              style={{
+                backgroundColor: ui.panelAlt,
+                color: ui.text,
+                border: `1px solid ${ui.border}`,
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = ui.focus;
+                e.currentTarget.style.boxShadow = `0 0 0 3px ${ui.focus}22`;
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = ui.border;
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+              onKeyDown={(e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') executeFunction();
+              }}
+            />
+            <MagnifyingGlassIcon
+              className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 opacity-60"
+              style={{ color: ui.textDim }}
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute left-3 top-1/2 -translate-y-1/2"
+                aria-label="Clear"
+              >
+                <XMarkIcon className="h-4 w-4" style={{ color: ui.textDim }} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto micro-scroll-y p-2">
+          <div className="space-y-1">
+            {searchedFunctions.map((fn) => {
+              const active = selectedFunction === fn;
+              return (
+                <motion.button
+                  key={fn}
+                  onClick={() => {
+                    setSelectedFunction(fn);
+                    initializeParams(fn);
+                    setResponse(null);
+                    setError('');
+                    setAuthHeaders(null);
+                    setUrlParams('');
+                    setActiveTab('run');
+                  }}
+                  className="w-full text-left rounded-md px-3 py-2 text-sm transition-all"
+                  style={{
+                    backgroundColor: active ? ui.accent : ui.panelAlt,
+                    color: active ? '#000' : ui.text,
+                    border: `1px solid ${active ? ui.accent : ui.border}`,
+                  }}
+                  whileTap={{ scale: 0.98 }}
+                  title={fn}
+                >
+                  {fn}
+                </motion.button>
+              );
+            })}
+            {searchedFunctions.length === 0 && (
+              <span className="text-xs px-3 py-2 block" style={{ color: ui.textDim }}>
+                No functions found
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      <div
-        className="micro-scroll -mx-4 flex max-w-full items-center gap-1.5 overflow-x-auto px-4 py-2"
-        style={fadeMaskX}
-      >
-        {searchedFunctions.map((fn) => {
-          const active = selectedFunction === fn;
-          return (
-            <motion.button
-              key={fn}
-              onClick={() => {
-                setSelectedFunction(fn);
-                initializeParams(fn);
-                setResponse(null);
-                setError('');
-                setAuthHeaders(null);
-                setUrlParams('');
-                setActiveTab('run');
-              }}
-              className="whitespace-nowrap rounded-md px-3 py-1.5 text-xs transition-all"
-              style={{
-                backgroundColor: active ? ui.accent : ui.panelAlt,
-                color: active ? '#000' : ui.text,
-                border: `1px solid ${active ? ui.accent : ui.border}`,
-              }}
-              whileTap={{ scale: 0.98 }}
-              title={fn}
-            >
-              {fn}
-            </motion.button>
-          );
-        })}
-        {searchedFunctions.length === 0 && (
-          <span className="text-xs" style={{ color: ui.textDim }}>
-            No functions found
-          </span>
-        )}
-      </div>
-
-      <div className="flex-1 px-4 pb-4">
+      {/* Right Side - Output & Run */}
+      <div className="flex-1 flex flex-col">
         {selectedFunction ? (
-          <div
-            className="flex h-full flex-col rounded-lg"
-            style={{
-              backgroundColor: ui.panel,
-              border: `1px solid ${ui.border}`,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.35)',
-            }}
-          >
-            <div className="flex gap-1 border-b p-2" style={{ borderColor: ui.border, backgroundColor: ui.panel }}>
+          <div className="flex h-full flex-col" style={{ backgroundColor: ui.panel }}>
+            {/* Run Button at Top */}
+            <div className="border-b px-4 py-3" style={{ borderColor: ui.border }}>
+              <button
+                onClick={executeFunction}
+                disabled={loading}
+                className="w-full rounded-md px-4 py-2 text-sm font-semibold outline-none transition-all flex items-center justify-center gap-2"
+                style={{
+                  backgroundColor: ui.accent,
+                  color: '#000',
+                  opacity: loading ? 0.7 : 1,
+                  border: `1px solid ${ui.accent}`,
+                }}
+                title="Ctrl/⌘ + Enter to Run"
+              >
+                <PlayIcon className="h-4 w-4" />
+                {loading ? 'Running…' : 'Run Function'}
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-1 border-b p-2" style={{ borderColor: ui.border }}>
               <button
                 onClick={() => setActiveTab('run')}
                 className="rounded-md px-3 py-1.5 text-xs transition-all"
@@ -235,8 +251,8 @@ export const ModApi = ({ mod }: { mod: any }) => {
                 }}
               >
                 <span className="inline-flex items-center gap-1">
-                  <PlayIcon className="h-3.5 w-3.5" />
-                  Run
+                  <CommandLineIcon className="h-3.5 w-3.5" />
+                  Parameters
                 </span>
               </button>
               {filteredSchema[selectedFunction]?.code && (
@@ -298,23 +314,6 @@ export const ModApi = ({ mod }: { mod: any }) => {
                           />
                         </div>
                       ))}
-                    </div>
-
-                    <div className="pt-2">
-                      <button
-                        onClick={executeFunction}
-                        disabled={loading}
-                        className="w-full rounded-md px-4 py-2 text-sm font-semibold outline-none transition-all"
-                        style={{
-                          backgroundColor: ui.accent,
-                          color: '#000',
-                          opacity: loading ? 0.7 : 1,
-                          border: `1px solid ${ui.accent}`,
-                        }}
-                        title="Ctrl/⌘ + Enter to Run"
-                      >
-                        {loading ? 'Running…' : 'Run'}
-                      </button>
                     </div>
 
                     {(response || error) && (

@@ -412,7 +412,7 @@ class Server:
             return result
         self.app.post("/{fn}")(server_fn)
         self.show_info()
-        uvicorn.run(self.app,  host='0.0.0.0', port=port, loop='asyncio')
+        uvicorn.run(self.app,  host='0.0.0.0', port=port)
 
     def show_info(self):
         print('--- Server Info ---', color='green', verbose=self.verbose)
