@@ -16,7 +16,7 @@ RUN pip install --upgrade pip setuptools wheel
 
 # Set working directory
 WORKDIR /root/mod
-()
+
 # Copy application
 COPY . .
 
