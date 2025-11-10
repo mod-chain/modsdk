@@ -1661,7 +1661,7 @@ class Mod:
             raise KeyboardInterrupt('Operation cancelled by user')
         return True
 
-    def push(self,  comment, *extra_comment, mod = None, safety=True):
+    def push(self,  comment, *extra_comment, mod = None, safety=False):
         path = self.dp(mod, relative=True)
         comment = ' '.join([comment, *extra_comment])
         assert os.path.exists(path), f'Path {path} does not exist'

@@ -8,15 +8,16 @@ import { Loading } from '@/app/block/Loading'
 import { UserCard } from '@/app/user/explore/UserCard'
 import ModCard from '@/app/mod/explore/ModCard'
 import { Footer } from '@/app/block/footer/Footer'
+import { SignVerifyTab } from './tabs/SignVerifyTab'
 
-type TabType = 'mods'
+type TabType = 'mods' | 'sign'
 
 function UserModules({ userData }: { userData: UserType }) {
   const { mods } = userData
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {mods.map((mod) => (
-        <ModCard mod={mod} />
+        <ModCard mod={mod} key={mod.key} />
       ))}
     </div>
   )
@@ -25,8 +26,8 @@ function UserModules({ userData }: { userData: UserType }) {
 export default function UserPage() {
   const params = useParams()
   const userKey = params?.key as string
-  const { client, keyInstance } = useUserContext()
-  const [user, setUser] = useState<UserType | null>(null)
+  const { client, user } = useUserContext()
+  const [userData, setUserData] = useState<UserType | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<TabType>('mods')
@@ -37,8 +38,8 @@ export default function UserPage() {
       setLoading(true)
       setError(null)
       try {
-        const userData = await client.call('user_info', { key: userKey })
-        setUser(userData as UserType)
+        const data = await client.call('user_info', { key: userKey })
+        setUserData(data as UserType)
       } catch (err: any) {
         console.error('Error fetching user:', err)
         setError(err?.message || 'Failed to load user')
@@ -57,7 +58,7 @@ export default function UserPage() {
     )
   }
 
-  if (error || !user) {
+  if (error || !userData) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center">
         <div className="text-center">
@@ -70,6 +71,7 @@ export default function UserPage() {
 
   const tabs: { id: TabType; label: string }[] = [
     { id: 'mods', label: 'mods' },
+    { id: 'sign', label: 'sign & verify' },
   ]
 
   return (
@@ -77,7 +79,7 @@ export default function UserPage() {
       <main className="flex-1 px-6 py-8">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="mb-8">
-            <UserCard user={user} />
+            <UserCard user={userData} />
           </div>
 
           <div className="flex flex-wrap gap-3 mb-6">
@@ -97,7 +99,8 @@ export default function UserPage() {
           </div>
 
           <div className="bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-blue-500/10 border-2 border-purple-500/30 rounded-2xl p-6 backdrop-blur-xl shadow-2xl shadow-purple-500/20">
-            {activeTab === 'mods' && <UserModules userData={user} />}
+            {activeTab === 'mods' && <UserModules userData={userData} />}
+            {activeTab === 'sign' && client?.key && <SignVerifyTab keyInstance={client.key} />}
           </div>
         </div>
       </main>
