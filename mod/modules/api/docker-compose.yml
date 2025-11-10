@@ -3,20 +3,20 @@ networks:
     external: true
     name: modnet
 services:
-  mod:
+  api:
     build:
       context: ./
-    container_name: mod
+    container_name: api
     deploy: {}
-    entrypoint: bash -c "m serve port=50420 key=mod remote=0 mod=mod"
-    environment: []
+    entrypoint: bash -c "m serve port=8000 key=api remote=0 mod=api"
     image: mod:latest
     ports:
-    - 50420:50420
+    - 8000:8000
     restart: unless-stopped
     shm_size: 100g
     volumes:
     - ~/mod/mod:/root/mod/mod
     - ~/.mod:/root/.mod
-    - ~/mod:/root/mod
-    working_dir: /root/mod
+    - ~/mod/mod/modules/api:/root/mod/mod/modules/api
+    working_dir: /root/mod/mod/modules/api
+version: '3.8'

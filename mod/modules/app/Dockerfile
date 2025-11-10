@@ -7,7 +7,6 @@ ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /app
 COPY ./package.json .
 RUN npm install
-
 # For development, we don't need to build
 # The dev server will handle compilation on the fly
 ENTRYPOINT ["npm", "run", "dev", "--", "--hostname", "0.0.0.0"]

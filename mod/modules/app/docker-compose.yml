@@ -4,6 +4,8 @@ networks:
     name: modnet
 services:
   app:
+    build:
+      context: ./
     container_name: app
     deploy: {}
     environment:

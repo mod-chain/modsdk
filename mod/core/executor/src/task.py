@@ -26,7 +26,6 @@ class Task:
         self.fn = fn if callable(fn) else lambda *args, **kwargs: fn
         self.set_params(params)
         self.start_time = time.time() # the time the task was created
-        self.end_time = 0
         self.timeout = timeout # the timeout of the task
         self.priority = priority # the priority of the task
         self.path = os.path.abspath(path) if path != None else None
@@ -45,19 +44,13 @@ class Task:
         except Exception as e:
             data = detailed_error(e)
             self.status = 'failed'
-        self.data = data
         self.status = 'complete'
         self.future.set_result(data)
-        self.end_time = time.time()
       
 
     def set_params(self, params):
         self.params = params
         return self.params
-
-    @property
-    def duration(self) -> float:
-        return self.end_time - self.start_time
         
     def result(self) -> object:
         return self.future.result()

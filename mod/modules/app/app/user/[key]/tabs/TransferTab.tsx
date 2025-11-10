@@ -1,12 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import {
   Send,
   Zap,
   CheckCircle,
   AlertCircle,
   ArrowRightLeft,
-  RefreshCcw,
-  Server,
 } from 'lucide-react'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { web3Enable, web3FromAddress } from '@polkadot/extension-dapp'
@@ -19,80 +17,44 @@ export const TransferTab: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [walletAddress, setWalletAddress] = useState('')
-  const [api, setApi] = useState<ApiPromise | null>(null)
   const [balance, setBalance] = useState<string>('0')
-  const [metadataInfo, setMetadataInfo] = useState<any>(null)
-  const [connecting, setConnecting] = useState(false)
 
   const networks = [
     { id: 'test', label: 'Modchain Devnet', url: 'wss://dev.api.modchain.ai' },
   ]
 
-  useEffect(() => {
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return
+    
     const address = localStorage.getItem('wallet_address')
     const mode = localStorage.getItem('wallet_mode')
     if (mode === 'subwallet' && address) {
       setWalletAddress(address)
+      fetchBalance(address)
     }
   }, [])
 
-  const initApi = async () => {
-    setConnecting(true)
-    setError(null)
-    setApi(null)
-    setMetadataInfo(null)
-
+  const fetchBalance = async (address: string) => {
     try {
       const selectedNetwork = networks.find((n) => n.id === network)
-      if (!selectedNetwork) throw new Error('Network not found')
+      if (!selectedNetwork) return
 
       const provider = new WsProvider(selectedNetwork.url)
-      const apiInstance = await ApiPromise.create({
-        provider,
-        noInitWarn: true,
-      })
+      const api = await ApiPromise.create({ provider })
+      await api.isReady
 
-      await apiInstance.isReady
+      const accountInfo = await api.query.system.account(address)
+      const freeBalance = accountInfo.data.free.toBigInt()
+      setBalance((Number(freeBalance) / 1e12).toFixed(4))
 
-      const chain = (await apiInstance.rpc.system.chain()).toString()
-      const version = apiInstance.runtimeVersion
-
-      const meta = {
-        chain,
-        specVersion: version.specVersion.toNumber(),
-        txVersion: version.transactionVersion.toNumber(),
-        implVersion: version.implVersion.toNumber(),
-        genesisHash: apiInstance.genesisHash.toHex(),
-      }
-
-      console.log('✅ Connected to chain:', meta)
-      setMetadataInfo(meta)
-      setApi(apiInstance)
-
-      if (walletAddress) {
-        const accountInfo = await apiInstance.query.system.account(walletAddress)
-        const freeBalance = accountInfo.data.free.toBigInt()
-        setBalance((Number(freeBalance) / 1e12).toFixed(4))
-      }
-    } catch (err: any) {
-      console.error('❌ API connection failed:', err)
-      setError(`Connection error: ${String(err.message || err)}`)
-    } finally {
-      setConnecting(false)
+      await api.disconnect()
+    } catch (err) {
+      console.error('Balance fetch error:', err)
     }
   }
 
-  useEffect(() => {
-    initApi()
-    return () => {
-      if (api) api.disconnect().catch(console.error)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [network, walletAddress])
-
   const executeTransfer = async () => {
     if (!toAddress || !amount) return setError('Please fill in all fields')
-    if (!api?.isReady) return setError('API not ready')
     if (!walletAddress) return setError('No wallet connected')
 
     setIsLoading(true)
@@ -100,6 +62,13 @@ export const TransferTab: React.FC = () => {
     setResponse(null)
 
     try {
+      const selectedNetwork = networks.find((n) => n.id === network)
+      if (!selectedNetwork) throw new Error('Network not found')
+
+      const provider = new WsProvider(selectedNetwork.url)
+      const api = await ApiPromise.create({ provider })
+      await api.isReady
+
       const recipientAddress = api.registry.createType(
         'AccountId32',
         toAddress
@@ -120,6 +89,7 @@ export const TransferTab: React.FC = () => {
       const extensions = await web3Enable('MOD')
       if (extensions.length === 0)
         throw new Error('SubWallet not found. Please install it.')
+      
       const injector = await web3FromAddress(walletAddress)
       if (!injector?.signer)
         throw new Error('No signer available from SubWallet')
@@ -129,44 +99,69 @@ export const TransferTab: React.FC = () => {
         transferAmount
       )
 
-      const result = await new Promise<any>(async (resolve, reject) => {
+      const result = await new Promise<any>((resolve, reject) => {
         let unsub: (() => void) | undefined
+        let resolved = false
+        
         const timeout = setTimeout(() => {
-          if (unsub) unsub()
-          reject(new Error('Transaction timeout'))
+          if (!resolved) {
+            resolved = true
+            if (unsub) unsub()
+            reject(new Error('Transaction timeout after 120s'))
+          }
         }, 120_000)
 
-        unsub = await tx.signAndSend(
+        tx.signAndSend(
           walletAddress,
           { signer: injector.signer },
-          ({ status, dispatchError, txHash }) => {
+          ({ status, dispatchError, txHash, events }) => {
             console.log('📊 Status:', status.type)
 
             if (dispatchError) {
-              if (dispatchError.isModule) {
-                const decoded = api.registry.findMetaError(dispatchError.asModule)
-                const { section, name, docs } = decoded
-                reject(
-                  new Error(`Error: ${section}.${name}: ${docs.join(' ')}`)
-                )
-              } else {
-                reject(new Error(dispatchError.toString()))
+              if (!resolved) {
+                resolved = true
+                clearTimeout(timeout)
+                if (unsub) unsub()
+                
+                if (dispatchError.isModule) {
+                  const decoded = api.registry.findMetaError(dispatchError.asModule)
+                  const { section, name, docs } = decoded
+                  reject(new Error(`${section}.${name}: ${docs.join(' ')}`))
+                } else {
+                  reject(new Error(dispatchError.toString()))
+                }
               }
+              return
             }
 
-            if (status.isInBlock) console.log('✅ In block:', status.asInBlock.toHex())
+            if (status.isInBlock) {
+              console.log('✅ In block:', status.asInBlock.toHex())
+            }
+            
             if (status.isFinalized) {
-              clearTimeout(timeout)
-              console.log('🎉 Finalized:', status.asFinalized.toHex())
-              resolve({
-                success: true,
-                blockHash: status.asFinalized.toHex(),
-                txHash: txHash.toHex(),
-              })
-              unsub?.()
+              if (!resolved) {
+                resolved = true
+                clearTimeout(timeout)
+                console.log('🎉 Finalized:', status.asFinalized.toHex())
+                resolve({
+                  success: true,
+                  blockHash: status.asFinalized.toHex(),
+                  txHash: txHash.toHex(),
+                  events: events?.map(e => e.toHuman()),
+                })
+                if (unsub) unsub()
+              }
             }
           }
-        )
+        ).then((unsubFn) => {
+          unsub = unsubFn
+        }).catch((err) => {
+          if (!resolved) {
+            resolved = true
+            clearTimeout(timeout)
+            reject(err)
+          }
+        })
       })
 
       setResponse({
@@ -177,20 +172,21 @@ export const TransferTab: React.FC = () => {
         timestamp: new Date().toISOString(),
       })
 
-      const updatedInfo = await api.query.system.account(walletAddress)
-      setBalance((Number(updatedInfo.data.free.toBigInt()) / 1e12).toFixed(4))
+      await fetchBalance(walletAddress)
       setToAddress('')
       setAmount('')
+      await api.disconnect()
     } catch (err: any) {
       console.error('❌ Transfer failed:', err)
+      
       let msg = err?.message || String(err)
 
-      if (msg.includes('unreachable') || msg.includes('metadata'))
-        msg =
-          '⚠️ Metadata/Runtime mismatch detected.\nPlease open SubWallet → Manage Networks → Update Metadata, then refresh this page.'
-      else if (msg.includes('1010')) msg = 'Insufficient balance for fees.'
+      if (msg.includes('1010')) 
+        msg = 'Insufficient balance for fees.'
       else if (msg.toLowerCase().includes('cancel'))
         msg = 'Transaction cancelled by user.'
+      else if (msg.includes('timeout'))
+        msg = 'Transaction timeout. Please try again.'
 
       setError(msg)
     } finally {
@@ -229,49 +225,6 @@ export const TransferTab: React.FC = () => {
             <span>NO WALLET CONNECTED</span>
           </div>
         )}
-      </div>
-
-      {/* Metadata Info */}
-      <div className="p-3 rounded-lg bg-gradient-to-br from-blue-500/10 border border-blue-500/30">
-        <div className="flex justify-between items-center mb-2">
-          <div className="flex items-center gap-2 text-blue-400 text-sm font-mono">
-            <Server size={16} />
-            <span>NETWORK METADATA</span>
-          </div>
-          <button
-            onClick={initApi}
-            disabled={connecting}
-            className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-200 font-mono"
-          >
-            <RefreshCcw size={14} className={connecting ? 'animate-spin' : ''} />
-            Refresh
-          </button>
-        </div>
-        {metadataInfo ? (
-          <div className="text-blue-300 text-xs font-mono space-y-1">
-            <div>Chain: {metadataInfo.chain}</div>
-            <div>Spec Version: {metadataInfo.specVersion}</div>
-            <div>Tx Version: {metadataInfo.txVersion}</div>
-            <div>Impl Version: {metadataInfo.implVersion}</div>
-          </div>
-        ) : (
-          <div className="text-blue-500/70 text-xs font-mono italic">
-            {connecting ? 'Connecting to node...' : 'Not connected'}
-          </div>
-        )}
-      </div>
-
-      {/* Info Box */}
-      <div className="p-3 rounded-lg bg-gradient-to-br from-yellow-500/10 border border-yellow-500/30">
-        <div className="text-yellow-400 text-xs font-mono">
-          ⚠️ If you get metadata/version errors:
-          <ol className="mt-2 ml-4 list-decimal space-y-1">
-            <li>Open SubWallet extension</li>
-            <li>Go to Settings → Manage networks</li>
-            <li>Find "Modchain Devnet" → Update metadata</li>
-            <li>Refresh this page</li>
-          </ol>
-        </div>
       </div>
 
       {/* Transfer Form */}
@@ -335,7 +288,7 @@ export const TransferTab: React.FC = () => {
 
           <button
             onClick={executeTransfer}
-            disabled={!toAddress || !amount || isLoading || !api?.isReady || !walletAddress}
+            disabled={!toAddress || !amount || isLoading || !walletAddress}
             className="w-full py-2 border border-green-500/50 text-green-400 hover:bg-green-500/10 hover:border-green-500 transition-all rounded font-mono uppercase disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isLoading ? (

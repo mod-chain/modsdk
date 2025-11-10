@@ -5,8 +5,7 @@ from typing import Dict, Any, Optional, Union
 
 class RmFile:
     
-    def forward(self, 
-                path: str): 
+    def forward(self,  path: str): 
         """Remove a file at the specified path.
         Args:
             path (str): The path to the file to be removed.

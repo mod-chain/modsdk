@@ -276,6 +276,5 @@ class  IpfsClient:
         retrieved_obj = self.get(ipfs_hash)
         return retrieved_obj == test_obj
 
-
     def __str__(self):
         return f"IpfsClient(url={self.url})"

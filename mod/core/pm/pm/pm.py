@@ -17,8 +17,10 @@ class PM:
                 path = m.lib_path, 
                 image = None, # default image name is the folder name
                 store_path='~/.mod/server', 
+                network='modnet',
                 **kwargs):
-    
+
+        self.network = network    
         self.path = path
         self.store = m.mod('store')(store_path)
 
@@ -101,16 +103,19 @@ class PM:
         """
         Generate and run a Docker container using docker-compose.
         """ 
+        network = network or self.network
+        if not self.network_exists(network):
+            self.add_network(network)
         name = self.name2process(name)
         if self.server_exists(name):
             self.kill(name)
+
         # Build the service configuration
-  
-        if image == None:
-            image = self.ensure_image(mod=name, tag=tag)
+        image = image or self.ensure_image(mod=name, tag=tag)
 
         serve_config = {
             'image': image,
+            'build':{'context': './'},
             'container_name': name,
             'restart': restart
         }
@@ -135,7 +140,6 @@ class PM:
         serve_config['working_dir'] = working_dir
         if build:
             serve_config.pop('image', None)
-            serve_config['build'] = build
         if cmd or entrypoint:
             serve_config['entrypoint'] = f'bash -c "{cmd}"'
         # Write the docker-compose file
@@ -663,6 +667,64 @@ class PM:
         except Exception as e:
             m.print(f"Error getting ports for container {container_name}: {e}", color='red')
             return {}
+    
+    def networks(self) -> List[str]:
+        """
+        List all Docker networks.
+        """
+        text = m.cmd('docker network ls', verbose=False)
+        networks = []
+        for i, line in enumerate(text.split('\n')):
+            if not line.strip():
+                continue
+            if i > 0:
+                parts = line.split()
+                if len(parts) > 1:  # Check if there are enough parts in the line
+                    networks.append(parts[1])
+        return networks
+
+    def add_network(self, name: str='modnet') -> Dict[str, str]:
+        """
+        Add a Docker network.
+        """
+        print(f'Adding network {name}')
+        if name in self.networks():
+            return {'status': 'exists', 'name': name}
+        try:
+            m.cmd(f'docker network create {name}', verbose=False)
+            return {'status': 'created', 'name': name}
+        except Exception as e:
+            return {'status': 'error', 'name': name, 'error': str(e)}
+
+    def network_exists(self, name: str) -> bool:
+        """
+        Check if a Docker network exists.
+        """
+        return name in self.networks()
+
+    def network_info(self, name: str) -> Dict[str, Any]:
+        """
+        Get information about a Docker network.
+        """
+        try:
+            output = m.cmd(f'docker network inspect {name}', verbose=False)
+            info = json.loads(output)
+            return info[0] if len(info) > 0 else {}
+        except Exception as e:
+            m.print(f"Error inspecting network {name}: {e}", color='red')
+            return {}
+    
+    def rm_network(self, name: str) -> Dict[str, str]:
+        """
+        Remove a Docker network.
+        """
+        if name not in self.networks():
+            return {'status': 'not_found', 'name': name}
+        try:
+            m.cmd(f'docker network rm {name}', verbose=False)
+            return {'status': 'removed', 'name': name}
+        except Exception as e:
+            return {'status': 'error', 'name': name, 'error': str(e)}
     
     def namespace(self, search=None, max_age=None, update=False, **kwargs) -> dict:
         """

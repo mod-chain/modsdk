@@ -9,6 +9,7 @@ import { UserCard } from '@/app/user/explore/UserCard'
 import ModCard from '@/app/mod/explore/ModCard'
 import { Footer } from '@/app/block/footer/Footer'
 import { SignVerifyTab } from './tabs/SignVerifyTab'
+import { TransferTab } from './tabs/TransferTab'
 
 type TabType = 'mods' | 'sign'
 
@@ -72,6 +73,7 @@ export default function UserPage() {
   const tabs: { id: TabType; label: string }[] = [
     { id: 'mods', label: 'mods' },
     { id: 'sign', label: 'sign & verify' },
+    { id : 'transfer', label: 'transfer' }
   ]
 
   return (
@@ -101,6 +103,7 @@ export default function UserPage() {
           <div className="bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-blue-500/10 border-2 border-purple-500/30 rounded-2xl p-6 backdrop-blur-xl shadow-2xl shadow-purple-500/20">
             {activeTab === 'mods' && <UserModules userData={userData} />}
             {activeTab === 'sign' && client?.key && <SignVerifyTab keyInstance={client.key} />}
+            {activeTab === 'transfer' && client?.key && user && <TransferTab client={client} currentUser={user} />}
           </div>
         </div>
       </main>

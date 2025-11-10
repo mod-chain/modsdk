@@ -28,6 +28,13 @@ class Mod:
         """
         self.sync(config=config)
 
+    def get_ports(self, n=3) -> list:
+        port_range = self.get_port_range()
+        used_ports = self.used_ports()
+        available_ports = [p for p in range(port_range[0], port_range[1]) if p not in used_ports]
+        if len(available_ports) < n:
+            raise Exception(f'Not enough available ports in range {port_range}, only {len(available_ports)} available')
+        return available_ports[:n]
 
     def get_port_range(port_range: list = None) -> list:
         import mod as m
@@ -1213,6 +1220,8 @@ class Mod:
             mod_exists = os.path.exists(mod_path) and os.path.isdir(mod_path)
         return mod_exists
 
+    
+
     def logs(self, *args, **kwargs):
         return self.fn('pm/logs')(*args, **kwargs)
     
@@ -1305,7 +1314,10 @@ class Mod:
                 **kwargs): 
         path = path or self.core_path
         cache_key = f'cache_tree/{path}_{depth}_{folders}_{search}_{avoid_prefixes}_{avoid_suffixes}'
-        tree = self.get(cache_key, default=None, update=update)
+
+        if not hasattr(self, '_tree_cache'):
+            self._tree_cache = {}
+        tree = None if update else self._tree_cache.get(cache_key, None)
         if tree == None:
             path = path or self.core_path
             if folders :
@@ -1322,18 +1334,18 @@ class Mod:
                 x_list =  x.split('/')
                 if x_list[-1] == x_list[-2]: 
                     x = '/'.join(x_list[:-1])
+                self._tree_cache[cache_key] = x
                 # remove avoid terms
                 return x    
-
             tree = {self.get_name(k):process_v(v) for k,v in tree.items()}
+            self._tree_cache[cache_key] = tree
 
 
-            for k,v in self.shortcuts.items():
-                if v in tree:
-                    tree[k] = tree[v]
+        for k,v in self.shortcuts.items():
+            if v in tree:
+                tree[k] = tree[v]
 
-            tree = dict(sorted(tree.items()))
-            self.put(cache_key, tree)
+        tree = dict(sorted(tree.items()))
 
         if search:
             search = self.get_name(search)

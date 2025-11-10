@@ -358,12 +358,18 @@ class Server:
               daemon = True, 
               **extra_params 
               ):
+
+
+
+        if hasattr(m.mod(mod), 'serve'):
+            return m.mod(mod)().serve(port=port)
         mod = mod or 'mod'
         port = self.get_port(port, mod=mod)
         print(f'Serving {mod} on port {port}', color='green', verbose=self.verbose)
         params = {**(params or {}), **extra_params}
         if remote:
             return m.mod('pm')().forward(mod, params=params, port=port, key=key, cwd=cwd, daemon=daemon, volumes=volumes, env=env)
+
         self.set_mod(mod=mod, params=params, key=key, public=public, fns=fns, port=port)
 
     def set_mod(self, 

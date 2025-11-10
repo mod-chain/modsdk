@@ -10,8 +10,6 @@ def new_event_loop() -> 'asyncio.AbstractEventLoop':
     nest_asyncio.apply()
     return loop
 
-
-
 def wait(futures:list, timeout:int = None, generator:bool=False, return_dict:bool = True) -> list:
     is_singleton = bool(not isinstance(futures, list))
 
