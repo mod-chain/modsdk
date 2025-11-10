@@ -12,6 +12,7 @@ from typing import *
 from concurrent.futures._base import Future
 import time
 from tqdm import tqdm
+from .utils import detailed_error
 
 class Task:
     def __init__(self, 
@@ -28,30 +29,10 @@ class Task:
         self.end_time = 0
         self.timeout = timeout # the timeout of the task
         self.priority = priority # the priority of the task
-        self.data = None # the result of the task
         self.path = os.path.abspath(path) if path != None else None
         self.status = 'pending' # pending, running, done
         self.future = Future()
 
-    def set_params(self, params):
-        self.params = params
-        return self.params
-
-    @property
-    def duration(self) -> float:
-        return self.end_time - self.start_time
-
-    @property
-    def state(self) -> dict:
-        return {
-            'fn': self.fn.__name__,
-            'params': self.params,
-            'timeout': self.timeout,
-            'start_time': self.start_time, 
-            'end_time': self.end_time,
-            'priority': self.priority,
-            'status': self.status,
-        }
 
     def run(self):
         """Run the given work item"""
@@ -61,14 +42,23 @@ class Task:
             self.future.set_exception(TimeoutError('Task timed out'))
         try:
             data = self.fn(**self.params)
-            self.status = 'complete'
         except Exception as e:
             data = detailed_error(e)
             self.status = 'failed'
+        self.data = data
+        self.status = 'complete'
         self.future.set_result(data)
-        self.data = data 
         self.end_time = time.time()
-              
+      
+
+    def set_params(self, params):
+        self.params = params
+        return self.params
+
+    @property
+    def duration(self) -> float:
+        return self.end_time - self.start_time
+        
     def result(self) -> object:
         return self.future.result()
 
@@ -99,14 +89,5 @@ class Task:
             return self.priority < other
         else:
             raise TypeError(f"Cannot compare Task with {type(other)}")
-
-    def detailed_error(self, e:Exception) -> str:
-        import traceback
-        tb_lines = traceback.format_exception(type(e), e, e.__traceback__)
-        return {
-            'error': str(e),
-            'traceback': ''.join(tb_lines)
-        }
-
 
 NULL_TASK = (sys.maxsize, Task(None, {}))

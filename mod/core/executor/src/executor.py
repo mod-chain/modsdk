@@ -27,6 +27,7 @@ class Executor:
         self,
         max_workers: int =None,
         maxsize : int = None ,
+        gate= None,
         thread_name_prefix : str ="",
         mode = 'thread',
     ):
@@ -51,16 +52,8 @@ class Executor:
         self.shutdown_lock = threading.Lock()
         self.thread_name_prefix = thread_name_prefix or ("Executor-%d" % self._counter() )
 
-    @property
-    def is_empty(self):
-        return self.task_queue.empty()
-
-    @property
-    def is_full(self):
-        return self.task_queue.full()
-
-    def submit(self, 
-               fn: Callable,
+    def forward(self, 
+                fn: Callable,
                 params = None,
                 priority:int=1,
                 timeout=200, 
@@ -81,23 +74,24 @@ class Executor:
                 raise Exception("Executor is broken")
             if self.shutdown:
                 raise RuntimeError("cannot schedule new futures after shutdown")
-
             task = Task(fn=fn, params=params, timeout=timeout, path=path)
-            # add the work item to the queue
-
-            # if the function has a cost attribute, multiply the priority by the cost
-            if hasattr(fn, '__cost__'):
-                priority = fn.__cost__ * priority
-
             self.task_queue.put((priority, task), block=False)
-            # adjust the thread count to match the new task
             self.adjust_thread_count()
-            
-        # return the future (MAYBE WE CAN RETURN THE TASK ITSELF)
+
         if return_future:
             return task.future
+        return task.result()
         
-        return task.future.result()
+    submit = forward
+
+    @property
+    def is_empty(self):
+        return self.task_queue.empty()
+
+    @property
+    def is_full(self):
+        return self.task_queue.full()
+
 
     def adjust_thread_count(self):
         # if idle threads are available, don't spin new threads

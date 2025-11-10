@@ -281,13 +281,7 @@ class  Api:
             for file, file_cid in content.items():
                 content[file] = self.store.get(file_cid)
         return content
-
-
-    
-
-
         
-
     def setback(self, mod: m.Mod='app', content:str = 3, key=None ) -> Dict[str, Any]:
         content = self.get_content(self.history(mod=mod, key=key)[-1]['data'])
         dirpath = m.dp(mod)
@@ -296,14 +290,14 @@ class  Api:
             filepath = os.path.join(dirpath, file)
             write_files.append(filepath)
             m.print(f"[✓] Restored file: {filepath}", color="green")
-            # m.put_text(filepath, file_content)     
+            m.put_text(filepath, file_content)     
         # delete files that are not in the setback content
         delete_files = []
         for file in m.files(dirpath):
             filepath = os.path.join(dirpath, file)
             if filepath not in write_files:
                 delete_files.append(filepath)
-                # os.remove(filepath)
+                os.remove(filepath)
                 m.print(f"[✓] Deleted file: {filepath}", color="yellow")
 
         return {
@@ -312,7 +306,6 @@ class  Api:
             'delete': delete_files
         }
         
-
 
     def content(self, mod: m.Mod='store', expand=False) -> Dict[str, Any]:
         """Get the content of a mod Mod from IPFS.
