@@ -1609,9 +1609,6 @@ class SubstrateInterface:
                 f"Extrinsic version {self.metadata[1][1]['extrinsic']['version']} not supported"
             )
 
-        # Retrieve nonce
-        if nonce is None:
-            nonce = self.get_account_nonce(keypair.ss58_address) or 0
 
         # Process era
         if era is None:

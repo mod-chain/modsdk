@@ -24,7 +24,7 @@ class Store:
             self.private = True
             self.key = self.get_key(password)
             self.encrypt_all()
-        print(f'Store private={self.private} path={self.path} file_type={self.file_type}')
+        # print(f'Store private={self.private} path={self.path} file_type={self.file_type}')
         
     def put(self, path, data, password=None):
         path = self.get_path(path, file_type=self.file_type)

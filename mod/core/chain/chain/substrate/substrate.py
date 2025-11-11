@@ -8,10 +8,10 @@ from contextlib import contextmanager
 from copy import deepcopy
 from typing import Any, Mapping, TypeVar, cast, List, Dict, Optional
 from collections import defaultdict
-from .utils.storage import StorageKey
-from .utils.key import  Keypair# type: ignore
-from .utils.base import ExtrinsicReceipt, SubstrateInterface
-from .utils.types import (ChainTransactionError,
+from .storage import StorageKey
+from .key import  Keypair# type: ignore
+from .base import ExtrinsicReceipt, SubstrateInterface
+from .types import (ChainTransactionError,
                     NetworkQueryError, 
                     SubnetParamsMaps, 
                     SubnetParamsWithEmission,
@@ -1066,6 +1066,7 @@ class Substrate:
 
         return multisig_acc
 
+
     def compose_call_multisig(
         self,
         fn: str,
@@ -1667,14 +1668,6 @@ class Substrate:
         is_my_mod = lambda mod_info: mod_info['name'].startswith(key.address) or mod_info.get('owner') == key.address
         return list(filter(is_my_mod, mods))
 
-    def mykey2mods(self, update=False):
-        key2mods = self.key2mods(update=update)
-        my_key2mods = {}
-        key2address = m.key2address()
-        for key_str, address in key2address.items():
-            if address in key2mods:
-                my_key2mods[address] = key2mods.get(address, [])
-        return my_key2mods
 
     def mod(self, name='api', key=None, update=False):
         mod_id = self.modid(name=name, key=key, update=update)
@@ -1684,8 +1677,46 @@ class Substrate:
         info['id'] = mod_id
         info['collateral'] = mod.get('collateral', 0)
         return info
+
+    def call_rpc(self, mod = 'Balances', 
+                        fn='transfer_keep_alive', 
+                        params={'dest': '5HmHcqweTcHrvifMna2r7NEjX9jcNUDr4QNiizMz2dU5wCgp', 'value': 0}, 
+                        era: dict[str, int] = None, 
+                        nonce=None,
+                        tip_asset_id = None,
+                        tip = 0,
+                        key = None
+                         ):
+
+        key = self.get_key(key)
+        with self.get_conn(init=True) as substrate:
+            call = substrate.compose_call(  # type: ignore
+                call_module=mod, call_function=fn, call_params=params
+            )
+            # Retrieve nonce
+            nonce = nonce or substrate.get_account_nonce(key.ss58_address) or 0
+            era = era or '00'
+            # sign it and get the payload
+            payload = call.value
+            signature_payload = substrate.generate_signature_payload(
+                    call=call, era=era, nonce=nonce, tip=tip, tip_asset_id=tip_asset_id
+                )
+
+            rpc_payload = {
+                'meethod': 'author_submitExtrinsic',
+                'params': {
+                    'call': payload,
+                    'era': era,
+                    'nonce': nonce,
+                    'tip': tip,
+                    'tip_asset_id': tip_asset_id,
+                },
+                'signature_payload': signature_payload,
+            }
+            substrate.send_rpc(rpc_payload)
+
+        return key.sign(signature_payload)
     
         
-    myk2m = mykey2mods
     # def modules()
 
