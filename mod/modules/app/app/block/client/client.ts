@@ -1,6 +1,7 @@
 import {Auth, AuthHeaders} from '@/app/block/client/auth';
 import Key from '@/app/block/key';
 
+
 export class Client {
   public url: string;
   public key: Key;

@@ -10,6 +10,7 @@ class App:
             mod = 'app',
             public=False, 
             remote=True, 
+            ip = None,
             build=False):
 
         if not m.server_exists('ipfs'):
@@ -20,7 +21,7 @@ class App:
             m.serve('api', port=api_port)
         image = f'{mod}:latest'
         cwd = m.dirpath(mod) 
-        ip = m.ip() if public else '0.0.0.0'
+        ip = ip or (m.ip() if public else '0.0.0.0')
         return m.fn('pm/run')(
                     name=mod, 
                     volumes=[f'{cwd}:/app','/app/node_modules'], 
