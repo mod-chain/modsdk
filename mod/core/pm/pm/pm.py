@@ -14,15 +14,15 @@ class PM:
     """
 
     def __init__(self,  
-                path = m.lib_path, 
+                mod='mod',
                 image = None, # default image name is the folder name
-                store_path='~/.mod/server', 
+                path='~/.mod/server', 
                 network='modnet',
                 **kwargs):
-
+        self.mod = mod
+        self.image = image or f'{mod}:latest'
         self.network = network    
-        self.path = path
-        self.store = m.mod('store')(store_path)
+        self.store = m.mod('store')(path)
 
     def compose_up(self, mod='chain', daemon:bool=True):
         """
@@ -52,19 +52,11 @@ class PM:
         """
         Runs a mod as a Docker container with port forwarding as a 
         """
-        env = env or {}
         params = params or {}
         params.update({'port': port or m.free_port(), 'key': key or mod, 'remote': False, 'mod': mod})
-        params_cmd = self.params2cmd(params)
-        cmd = f"m serve {params_cmd}"
+        cmd  = f"m serve {self.params2cmd(params)}" 
         volumes = self.volumes(mod, key=params['key'])
         dirpath = m.dirpath(mod)
-        docker_dirpath = self.convert_docker_path(dirpath)
-        if docker_in_docker:
-            # mount the docker socket
-            docker_dirpath = os.environ.get('DOCKER_SOCKET_PATH', '/var/run/docker.sock')
-            volumes[docker_dirpath] = docker_dirpath
-        working_directory = volumes[ dirpath.replace(m.home_path, '~')]
         result = self.run(name=mod, 
                           image=image, 
                           port=params['port'], 
@@ -73,12 +65,10 @@ class PM:
                           env=env, 
                           volumes=volumes, 
                           cwd=cwd or dirpath, 
-                          working_dir=working_directory)
-        self.namespace(update=1)
+                          docker_in_docker=docker_in_docker,
+                          working_dir=volumes[ dirpath.replace(m.home_path, '~')])
+        self.namespace(update=True)
         return result
-
-    def nodes(self,mod):
-        return self.dockerfile(mod)
 
     def run(self,
             name : str = "mod",
@@ -96,6 +86,7 @@ class PM:
             env: Optional[Dict] = None,
             working_dir : str = '/app',
             tag = 'latest',
+            docker_in_docker = False,
             compose_path: str = None, # the path to the compose file
             restart: str = 'unless-stopped',
             build =  None,
@@ -103,29 +94,33 @@ class PM:
         """
         Generate and run a Docker container using docker-compose.
         """ 
-        network = network or self.network
-        if not self.network_exists(network):
-            self.add_network(network)
+        network = self.ensure_network(network)
+        compose_path = self.compose_path(name) if compose_path is None else compose_path
+        compose_config = m.get_yaml(compose_path) if os.path.exists(compose_path) else {'version': '3.8', 'services': {}}
+        compose_config['networks'] = {
+            'default': {
+                'external': True,
+                'name': network
+            }
+        }
         name = self.name2process(name)
         if self.server_exists(name):
             self.kill(name)
-
-        # Build the service configuration
-        image = image or self.ensure_image(mod=name, tag=tag)
-
         serve_config = {
-            'image': image,
             'build':{'context': './'},
             'container_name': name,
-            'restart': restart
+            'restart': restart,
+            'deploy': {'resources': resources} if resources else {},
+            'shm_size': shm_size
         }
-        # Handle command
-        serve_config['deploy'] = {'resources': resources} if resources else {}
-        serve_config['shm_size'] = shm_size
+
+        # PORTS
         if port != None:
             ports = {port: port}
-        if ports:
+        if isinstance(ports, dict):
             serve_config['ports'] = [f"{host_port}:{container_port}" for container_port, host_port in ports.items()] 
+
+        # VOLUMES
         if volumes:
             if isinstance(volumes, dict):
                 volumes = [f'{k}:{v}' for k, v in volumes.items()] 
@@ -133,46 +128,30 @@ class PM:
                 volumes = volumes
             else:
                 volumes = []
+            if docker_in_docker: 
+                volumes.append('/var/run/docker.sock:/var/run/docker.sock')
             serve_config['volumes'] = volumes
         if env:
             serve_config['environment'] = [f"{k}={v}" for k,v in env.items()] if env else []
-        
+    
         serve_config['working_dir'] = working_dir
+
+        image = image or self.ensure_image(mod=name)
         if build:
             serve_config.pop('image', None)
         if cmd or entrypoint:
             serve_config['entrypoint'] = f'bash -c "{cmd}"'
         # Write the docker-compose file
-        cwd = cwd or os.getcwd() 
-        if compose_path == None:
-            compose_paths = self.compose_paths(name)
-            if len(compose_paths) > 0:
-                compose_path = compose_paths[0]    
-            else:
-                compose_path = cwd + '/docker-compose.yml' 
-        if os.path.exists(compose_path):
-            compose_config = m.get_yaml(compose_path)
-        else:
-            compose_config = {'version': '3.8', 'services': {}}
-        
-
-
-        compose_config['networks'] = {
-            'default': {
-                'external': True,
-                'name': 'modnet'
-            }
-        }
         if name in compose_config['services']:
             compose_config['services'][name].update(serve_config)
-            # compose_config['extra_hosts'] = ["0.0.0.0:host-gateway"]
         else:
             compose_config['services'][name] = serve_config
-        
         m.put_yaml(compose_path, compose_config)
-        compose_cmd = f'cd {cwd} && ' +  ' '.join(['docker-compose', '-f', compose_path, 'up'])
+        cwd = cwd or os.getcwd() 
+        compose_cmd =  f'cd {cwd} && docker-compose -f {compose_path} up'
         if daemon:
-            compose_cmd += ' -d'        
+            compose_cmd += ' -d'   
+        print(f'Running command: {compose_cmd}')     
         os.system(compose_cmd)
         return compose_config
 
@@ -235,9 +214,7 @@ class PM:
                     dockerfiles.append(os.path.join(root, file))
         return dockerfiles
 
-    mod = 'mod'
     def ensure_image(self, mod='mod', tag:Optional[str]='latest') -> str:
-    
         dockerfiles = self.dockerfiles(mod)
         if len(dockerfiles) == 0 and mod != self.mod:
             print(f'No Dockerfile found in {mod}')
@@ -250,7 +227,6 @@ class PM:
                 self.build(mod=mod)
             image_tag = f'{mod}:{tag}' if tag else mod
             return image_tag
-        
 
     def compose_paths(self, mod='ipfs'):
         """
@@ -263,6 +239,14 @@ class PM:
                 compose_files.append(os.path.join(path, file))
                 break
         return compose_files
+
+    def compose_path(self, mod='mod'):
+        paths = self.compose_paths(mod)
+        return paths[0] if len(paths) > 0 else None
+
+    def compose_config(self, mod='mod'):
+     
+        return m.get_yaml(self.compose_path(mod))
 
     def dockerfile(self, mod='mod'):
         path = self.dockerfile_path(mod)
@@ -794,3 +778,37 @@ class PM:
         # replace home path with ~/ in docker paths
         volumes = {k.replace(m.home_path, '~'): v for k, v in volumes.items()}
         return volumes
+
+
+    # TEST
+    def test_network(self, network='modnet'):
+        """
+        Test if a Docker network exists, and create it if it doesn't.
+        """
+        if not self.network_exists(network):
+            self.add_network(network)
+        assert self.network_exists(network), f"Failed to create network {network}"
+        return {'status': 'exists', 'name': network}
+
+    def test_server(self, mod='api', port=8000, run_mode='uvicorn'):
+        """
+        Test running a mod as a Docker container with port forwarding.
+        """
+        def server_fn(fn: str):
+            result = self.forward(mod=mod, port=port, key=mod)
+            print(f'Server running at: {result}')
+            m.sleep(2)
+            print(self.logs(mod, tail=10))
+            print('Test complete.')
+            self.kill(mod)
+            return result
+
+    def nodes(self,mod):
+        return self.dockerfile(mod)
+
+    def ensure_network(self, network: str=None):
+        network = network or self.network
+        if not self.network_exists(network):
+            self.add_network(network)
+        assert self.network_exists(network), f"Failed to create network {network}"
+        return network

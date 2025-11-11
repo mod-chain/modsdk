@@ -12,10 +12,10 @@ class AesKey:
     """
 
     def __init__(self, password='fam'):
-        self.set_password(password)
+        self.password = self.get_password(password)
 
     def encrypt(self, data, password=None, verify_decryption=False):
-        password = self.get_password(password)  
+        password = self.get_password(password or self.password)  
         data = copy.deepcopy(data)
         data = json.dumps(data)
         if not isinstance(data, str):
@@ -32,7 +32,7 @@ class AesKey:
         return encrypted_bytes.decode() 
 
     def decrypt(self, data, password:str=None):  
-        password = self.get_password(password)  
+        password = self.get_password(password or self.password)  
         data = base64.b64decode(data)
         iv = data[:AES.block_size]
         cipher = AES.new(password, AES.MODE_CBC, iv)
@@ -51,14 +51,8 @@ class AesKey:
             assert dec == value, f'encryption failed, {dec} != {value}'
         return {'encrypted':enc, 'decrypted': dec, 'crypto_type':key.crypto_type}
 
-    def set_password(self, password):
-        self.password=self.get_password(password)
-        return {'msg': 'password set'}
-
-    def get_password(self, password:str=None):
-        if password == None: 
-            password = self.password
+    def get_password(self, password:str):
+        assert password != None, "Password cannot be None"
         if isinstance(password, str):
             password = password.encode()
-        # if password is a key, use the key's private key as password
         return hashlib.sha256(password).digest()
