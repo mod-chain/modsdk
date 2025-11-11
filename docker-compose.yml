@@ -4,19 +4,16 @@ networks:
     name: modnet
 services:
   mod:
-    build:
-      context: ./
     container_name: mod
     deploy: {}
     entrypoint: bash -c "m serve port=50420 key=server remote=0 mod=mod"
     environment: []
-    image: mod:latest
+    image: mod
     ports:
     - 50420:50420
     restart: unless-stopped
     shm_size: 100g
     volumes:
-    - ~/mod/mod:/root/mod/mod
-    - ~/.mod:/root/.mod
     - ~/mod:/root/mod
+    - ~/.mod:/root/.mod
     working_dir: /root/mod

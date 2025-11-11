@@ -41,7 +41,9 @@ class Client:
         # step 3: get the params
         params = params or {}
         params.update(extra_kwargs)   
+
         headers = self.auth.forward(dict(fn=fn, params=params), key=key, cost=cost)
+
         with requests.Session() as conn:
             try:
                 response = conn.post( url, json=params,  headers=headers, timeout=timeout, stream=stream)
@@ -49,15 +51,6 @@ class Client:
                 url = url.replace('0.0.0.0', self.get_mod_from_url('/'.join(url.split('/')[2:-2]))) 
                 response = conn.post( url, json=params,  headers=headers, timeout=timeout, stream=stream) 
 
-        return self.process_response(response)
-
-    def ping(self, url):
-        with requests.Session() as conn: 
-            response = conn.post( url)
-        return response
-
-    
-    def process_response(self, response):
         # step 5: handle the response
         if response.status_code != 200:
             raise Exception(response.text)
@@ -73,7 +66,17 @@ class Client:
                 result = response.content
                 if response.status_code != 200:
                     raise Exception(result)
+                    
         return result
+
+    def ping(self, url):
+        with requests.Session() as conn: 
+            response = conn.post( url)
+        return response
+
+    
+
+
     def get_key(self,key=None):
         key = key or  self.key
         if isinstance(key, str):

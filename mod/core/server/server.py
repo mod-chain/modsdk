@@ -73,6 +73,7 @@ class Server:
         """
         runt the function
         """
+        print('Server: Forwarding request for function', fn)
         request = self.get_request(fn=fn, request=request) # get the request
         self.print_request(request)
         fn = request['fn']
@@ -102,15 +103,15 @@ class Server:
                     gen_result['data'].append(item)
                     yield item
                 # save the transaction between the headers and server for future auditing
-                self.tx.forward(
-                    mod=info["name"],
-                    fn=fn, # 
-                    params=params, # params of the inputes
-                    result=gen_result,
-                    client=request['client'],
-                    cost=cost,
-                    server= self.auth.headers(data={"fn": fn, "params": params, "result": result, "cost": cost}), 
-                    key=self.key)
+                # self.tx.forward(
+                #     mod=info["name"],
+                #     fn=fn, # 
+                #     params=params, # params of the inputes
+                #     result=gen_result,
+                #     client=request['client'],
+                #     cost=cost,
+                #     server= self.auth.headers(data={"fn": fn, "params": params, "result": result, "cost": cost}), 
+                #     key=self.key)
             # if the result is a generator, return a stream
             return  EventSourceResponse(generator_wrapper(result))
         else:
@@ -344,6 +345,15 @@ class Server:
     def namespace(self,  search=None,**kwargs) -> dict:
         return self.pm.namespace(search=search, **kwargs)
 
+    def ensure_env(self, mod):
+        mod_obj = m.mod(mod)
+        if hasattr(mod_obj, 'ensure_env'):
+            print('Ensuring environment for mod', mod)
+            mod_obj().ensure_env()
+        return True
+            
+        
+
     def serve(self, 
               mod: Union[str, 'Module', Any] = None, # the mod in either a string
               params:Optional[dict] = None,  # kwargs for the mod
@@ -360,12 +370,8 @@ class Server:
               daemon = True, 
               **extra_params 
               ):
-
-
-
-        if hasattr(m.mod(mod), 'serve') and mod != 'mod':
-            return m.mod(mod)().serve(port=port)
         mod = mod or 'mod'
+        self.ensure_env(mod)
         port = self.get_port(port, mod=mod)
         print(f'Serving {mod} on port {port}', color='green', verbose=self.verbose)
         params = {**(params or {}), **extra_params}
@@ -384,6 +390,8 @@ class Server:
                 hide_private_fns: bool = True,  # whether to include private fns
                 helper_fns = ['info', 'forward'],
                 fns:Optional[List[str]]=None, ):
+
+        
         self.mod = m.mod(mod)(**(params or {}))
         self.key = m.key(key)
         self.url =  '0.0.0.0:' + str(port)
@@ -420,7 +428,7 @@ class Server:
             return result
         self.app.post("/{fn}")(server_fn)
         self.show_info()
-        self.run_app(port, port=port)
+        self.run_app(self.app, port=port)
 
     def run_app(self, app:FastAPI, port:int):
         if self.run_mode == 'uvicorn':
@@ -430,6 +438,7 @@ class Server:
             from hypercorn.asyncio import serve
             config = Config()
             config.bind = [f"0.0.0.0:{port}"]
+            print(f'Starting server with hypercorn on port {port}', color='green', verbose=self.verbose)
             asyncio.run(serve(self.app, config))
         else:
             raise Exception(f'Unknown mode {mode} for run_app')

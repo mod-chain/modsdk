@@ -11,7 +11,8 @@ class  IpfsClient:
 
     endpoints = ['pin', 'add_mod', 'reg', 'mod', 'pins']
     """Simple IPFS client using requests library only."""
-    host_options = ['0.0.0.0', 'ipfs_node']
+    node_name = 'ipfs.node'
+    host_options = ['0.0.0.0', node_name]
     def __init__(self, url: str = None):
         self.set_url(url)
         self.session = requests.Session()
@@ -236,33 +237,6 @@ class  IpfsClient:
         response.raise_for_status()
         return response.json()
 
-    def start_node(self) -> None:
-    
-        # This is a placeholder implementation.
-        # Actual implementation would depend on the environment and setup.
-        dirpath = Path(__file__).parent.parent
-        return os.system(f"cd {dirpath} && docker-compose up -d")
-
-    def stop_node(self) -> None:
-        """Stop the IPFS node if it's running."""
-        # This is a placeholder implementation.
-        # Actual implementation would depend on the environment and setup.
-        dirpath = Path(__file__).parent.parent
-        return os.system(f"cd {dirpath} && docker-compose down")
-
-    def node_running(self) -> bool:
-        """Check if the IPFS node is running."""
-        try:
-            self.id()
-            return True
-        except requests.exceptions.RequestException:
-            return False
-
-    def ensure_node(self, stepback_time=1):
-        while not self.node_running():
-            print("IPFS node not running. Starting node...")
-            self.start_node()
-            time.sleep(1)
 
     def test(self) -> bool:
         """Test connection to IPFS node by adding and retrieving test data.
@@ -278,3 +252,7 @@ class  IpfsClient:
 
     def __str__(self):
         return f"IpfsClient(url={self.url})"
+
+    def ensure_env(self):
+        """Ensure that the IPFS environment is set up."""
+        m.fn('pm/compose_up')(self.node_name)

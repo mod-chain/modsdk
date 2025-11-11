@@ -4,35 +4,17 @@ networks:
     name: modnet
 services:
   ipfs:
-    build:
-      context: ./
     container_name: ipfs
     deploy: {}
-    entrypoint: bash -c "m serve port=50119 key=ipfs remote=0 mod=ipfs"
-    extra_hosts:
-    - 0.0.0.0:host-gateway
+    entrypoint: bash -c "m serve port=8001 key=ipfs remote=0 mod=ipfs"
     image: mod:latest
     ports:
-    - 50119:50119
+    - 8001:8001
     restart: unless-stopped
     shm_size: 100g
     volumes:
-    - ~/mod/mod:/root/mod/mod
+    - ~/mod:/root/mod
     - ~/.mod:/root/.mod
     - ~/mod/mod/modules/ipfs:/root/mod/mod/modules/ipfs
     working_dir: /root/mod/mod/modules/ipfs
-  ipfs_node:
-    container_name: ipfs_node
-    extra_hosts:
-    - 0.0.0.0:host-gateway
-    image: ipfs/go-ipfs:latest
-    networks:
-    - default
-    ports:
-    - 5001:5001
-    - 4001:4001
-    - 8080:8080
-    restart: unless-stopped
-    volumes:
-    - ~/.ipfs/archive:/data/ipfs
-    - ~/.ipfs/data:/data/ipfs
+version: '3.8'

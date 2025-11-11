@@ -15,13 +15,13 @@ class PM:
 
     def __init__(self,  
                 mod='mod',
-                image = None, # default image name is the folder name
                 path='~/.mod/server', 
                 network='modnet',
+                image = None,
                 **kwargs):
         self.mod = mod
-        self.image = image or f'{mod}:latest'
-        self.network = network    
+        self.image = image or mod
+        self.network = network
         self.store = m.mod('store')(path)
 
     def compose_up(self, mod='chain', daemon:bool=True):
@@ -41,7 +41,7 @@ class PM:
                 port : Optional[int] = None, 
                 params : Optional[dict] = None,
                 key : Optional[str] = None,
-                image:str='mod:latest', 
+                image:str=None, 
                 daemon:bool=True,
                 cwd : Optional[str] = None,
                 volumes : Optional[dict] = None,
@@ -53,22 +53,34 @@ class PM:
         Runs a mod as a Docker container with port forwarding as a 
         """
         params = params or {}
-        params.update({'port': port or m.free_port(), 'key': key or mod, 'remote': False, 'mod': mod})
+        port = port or m.free_port()
+        params.update({'port': port, 'key': key or mod, 'remote': False, 'mod': mod})
         cmd  = f"m serve {self.params2cmd(params)}" 
-        volumes = self.volumes(mod, key=params['key'])
+        # set up volumes
         dirpath = m.dirpath(mod)
+        if volumes is None:
+            paths =  [m.lib_path, m.storage_path, dirpath]
+            volumes = [f'{p}:{self.convert_docker_path(p)}' for p in paths]
+        cwd = cwd or dirpath
+        working_dir = self.convert_docker_path(dirpath)
+        # run the container
         result = self.run(name=mod, 
                           image=image, 
-                          port=params['port'], 
+                          port=port, 
                           cmd=cmd, 
                           daemon=daemon, 
                           env=env, 
                           volumes=volumes, 
-                          cwd=cwd or dirpath, 
+                          cwd=cwd, 
                           docker_in_docker=docker_in_docker,
-                          working_dir=volumes[ dirpath.replace(m.home_path, '~')])
+                          working_dir=working_dir)
         self.namespace(update=True)
         return result
+
+    def get_compose_path(self, name: str):
+        dirpath = m.dirpath(name)
+        files = [dirpath+'/'+f for f in os.listdir(dirpath) if f.lower() in ['docker-compose.yml', 'docker-compose.yaml']]
+        return files[0] if len(files) > 0 else os.path.join(dirpath, 'docker-compose.yml')
 
     def run(self,
             name : str = "mod",
@@ -95,19 +107,25 @@ class PM:
         Generate and run a Docker container using docker-compose.
         """ 
         network = self.ensure_network(network)
-        compose_path = self.compose_path(name) if compose_path is None else compose_path
-        compose_config = m.get_yaml(compose_path) if os.path.exists(compose_path) else {'version': '3.8', 'services': {}}
+        compose_path = self.get_compose_path(name)
+        if not os.path.exists(compose_path):
+            m.print(f'Creating new docker-compose file at {compose_path}', color='yellow')
+            compose_config = {'version': '3.8', 'services': {}}
+        else:
+            compose_config = m.get_yaml(compose_path)
         compose_config['networks'] = {
             'default': {
                 'external': True,
                 'name': network
             }
         }
-        name = self.name2process(name)
+        image = image or self.ensure_image(name)
+
         if self.server_exists(name):
             self.kill(name)
         serve_config = {
-            'build':{'context': './'},
+            'build':{'context':'./'},
+            'image': image or f'{name}:{tag}',
             'container_name': name,
             'restart': restart,
             'deploy': {'resources': resources} if resources else {},
@@ -128,31 +146,76 @@ class PM:
                 volumes = volumes
             else:
                 volumes = []
-            if docker_in_docker: 
-                volumes.append('/var/run/docker.sock:/var/run/docker.sock')
             serve_config['volumes'] = volumes
+        if docker_in_docker: 
+            volumes.append('/var/run/docker.sock:/var/run/docker.sock')
         if env:
             serve_config['environment'] = [f"{k}={v}" for k,v in env.items()] if env else []
     
         serve_config['working_dir'] = working_dir
 
-        image = image or self.ensure_image(mod=name)
         if build:
             serve_config.pop('image', None)
+        else:
+            serve_config.pop('build', None)
         if cmd or entrypoint:
             serve_config['entrypoint'] = f'bash -c "{cmd}"'
         # Write the docker-compose file
+
         if name in compose_config['services']:
             compose_config['services'][name].update(serve_config)
         else:
             compose_config['services'][name] = serve_config
-        m.put_yaml(compose_path, compose_config)
         cwd = cwd or os.getcwd() 
         compose_cmd =  f'cd {cwd} && docker-compose -f {compose_path} up'
         if daemon:
             compose_cmd += ' -d'   
-        print(f'Running command: {compose_cmd}')     
+        print(f'Running command: {compose_cmd}')   
+
+
+        self.make_volumes_absolute(compose_config)
+        m.put_yaml(compose_path, compose_config)
         os.system(compose_cmd)
+        # # now we want to make them relative again in case we push to git
+        self.make_volumes_relative(compose_config)
+        m.put_yaml(compose_path, compose_config)
+
+        # now we need to make the 
+
+        return {'path': compose_path, 'compose' : compose_config}
+
+
+    @staticmethod
+    def make_volumes_absolute(compose_config):
+        """Convert volume paths to absolute paths."""
+        for service, config in compose_config.get('services', {}).items():
+            volumes = config.get('volumes', [])
+            abs_volumes = []
+            for vol in volumes:
+                if  ':' in vol:
+                    host_path, container_path = vol.split(':')
+                    abs_host_path = m.abspath(host_path)
+                    abs_volumes.append(f"{abs_host_path}:{container_path}")
+                else:
+                    abs_volumes.append(vol)
+            compose_config['services'][service]['volumes'] = abs_volumes
+        return compose_config
+
+    @staticmethod
+    def make_volumes_relative(compose_config):
+        """Convert volume paths to relative paths."""
+        for service, config in compose_config.get('services', {}).items():
+            volumes = config.get('volumes', [])
+            rel_volumes = []
+            for vol in volumes:
+                if ':' in vol:
+                    host_path, container_path = vol.split(':')
+                    # remove the home directory part
+                    rel_host_path = host_path.replace(m.home_path, '~')
+                    rel_volumes.append(f"{rel_host_path}:{container_path}")
+                else:
+                    rel_volumes.append(vol)
+            compose_config['services'][service]['volumes'] = rel_volumes
         return compose_config
 
     def process_info(self, name):
@@ -160,19 +223,13 @@ class PM:
         stats = self.stats()
 
         if 'name' in stats.columns:
-            info = stats[stats['name'] == self.name2process(name)]
+            info = stats[stats['name'] == name]
             if len(info) > 0:
                 return info.iloc[0].to_dict()
         return {}
 
-    def process2name(self, container):
-        return container.replace('__', '::')
-    
-    def name2process(self, name):
-        return name.replace('::', '__')
-
     def servers(self, search=None, **kwargs):
-        servers =  list(map(self.process2name, self.ps()))
+        servers =  self.ps()
         if search != None:
             servers = [m for m in servers if search in m]
         servers = sorted(list(set(servers)))
@@ -213,20 +270,6 @@ class PM:
                 if file.lower() == 'dockerfile':
                     dockerfiles.append(os.path.join(root, file))
         return dockerfiles
-
-    def ensure_image(self, mod='mod', tag:Optional[str]='latest') -> str:
-        dockerfiles = self.dockerfiles(mod)
-        if len(dockerfiles) == 0 and mod != self.mod:
-            print(f'No Dockerfile found in {mod}')
-            return self.mod + ':' + tag
-        else:
-            print(f'Building Docker image for {mod}')
-            path = m.dirpath(mod)
-            if not self.image_exists(mod):
-                print(f'No image found for {mod}, building...')
-                self.build(mod=mod)
-            image_tag = f'{mod}:{tag}' if tag else mod
-            return image_tag
 
     def compose_paths(self, mod='ipfs'):
         """
@@ -326,7 +369,6 @@ class PM:
         """
         if not self.exists(name):
             return {'status': 'not_found', 'name': name}
-        name = self.name2process(name)
         try:
             m.cmd(f'docker kill {name}', sudo=sudo, verbose=verbose)
             m.cmd(f'docker rm {name}', sudo=sudo, verbose=verbose)
@@ -376,11 +418,24 @@ class PM:
         images = self.images(df=False)
         return [img.split(':')[0] for img in images]
 
-    def image_exists(self, name: str) -> bool:
+    def image_exists(self, name: str=None) -> bool:
         """
         Check if a Docker image exists.
         """
+        name = name or self.mod
+        if ':latest' in name:
+            name = name.replace(':latest', '')
         return name in self.image_names()
+    
+    def ensure_image(self, mod='mod') -> str:
+        if not self.image_exists(mod):
+            dockerfiles = self.dockerfiles(mod)
+            if len(dockerfiles) == 0:
+                return self.image + ':latest'
+            print(f'Image {mod} does not exist. Building...')
+            self.build(mod)
+        return mod
+
 
     def logs(self,
              name: str,
@@ -394,7 +449,6 @@ class PM:
         Get container logs with advanced options.
         """
         follow = f if f is not None else follow
-        name = self.name2process(name)
         
         cmd = ['docker', 'logs']
 
@@ -408,6 +462,15 @@ class PM:
         cmd.append(name)
         cmd = ' '.join(cmd)
         return os.system(cmd) if follow else m.cmd(cmd, verbose=verbose)
+
+    def rm_image(self, name: str) -> str:   
+        """
+        Remove a Docker image.
+        """
+        try:
+            return m.cmd(f'docker rmi {name} -f')
+        except Exception as e:
+            return f"Error removing image: {e}"
 
     def prune(self, all: bool = False) -> str:
         """
@@ -626,7 +689,7 @@ class PM:
         Get the exposed ports of a container as a dictionary.
         """
         # Convert name format if needed
-        container_name = self.name2process(name)
+        container_name = name
         
         # Get container inspection data
         try:
@@ -767,19 +830,11 @@ class PM:
         return compose_files
 
     def convert_docker_path(self, p):
+        """
+        Convert a local path to a Docker-compatible path.
+        """
         return p.replace('~', '/root').replace(m.home_path, '/root')
         
-    def volumes(self, mod='store', key=None, default_paths= [m.root_path, m.storage_path]) -> Dict[str, str]:
-        key = key or mod
-        paths = default_paths.copy()
-        volumes = { p: self.convert_docker_path(p) for p in paths}
-        module_path = m.dirpath(mod)
-        volumes[module_path] = self.convert_docker_path(module_path)
-        # replace home path with ~/ in docker paths
-        volumes = {k.replace(m.home_path, '~'): v for k, v in volumes.items()}
-        return volumes
-
-
     # TEST
     def test_network(self, network='modnet'):
         """

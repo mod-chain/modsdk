@@ -15,7 +15,7 @@ services:
     restart: unless-stopped
     shm_size: 100g
     volumes:
-    - ~/mod/mod:/root/mod/mod
+    - ~/mod:/root/mod
     - ~/.mod:/root/.mod
     - ~/mod/mod/modules/api:/root/mod/mod/modules/api
     working_dir: /root/mod/mod/modules/api
