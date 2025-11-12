@@ -1,5 +1,4 @@
-import commune as c
-import streamlit as st
+import mod as c
 from typing import *
 import os
 import re

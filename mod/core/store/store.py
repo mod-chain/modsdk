@@ -10,34 +10,47 @@ class Store:
 
     expose=['get', 'put', 'ls']
 
-    def __init__(self, path='~/.mod/store',   password = None , file_type='json'):
+    def __init__(self, path='~/.mod/store',  password = None , filetype='json', private=False):
 
         """
         Store class to manage the storage of data in files
 
         path: str: the path of the path where the data is stored
-        file_type: str: the file_type of the files (json, txt, etc)
+        filetype: str: the filetype of the files (json, txt, etc)
         """
         self.path = self.abspath(path)
-        self.file_type = file_type
-        self.private = False
-        if password:
-            self.private = True
-            self.key = self.get_key(password)
+        self.set_filetype(filetype)
+        self.private = private
+        self.key = self.get_key(password or 'mod_default_store_password')
+        if self.private:
             self.encrypt_all()
-        # print(f'Store private={self.private} path={self.path} file_type={self.file_type}')
-        
-    def put(self, path, data, password=None):
-        path = self.get_path(path, file_type=self.file_type)
+
+    def set_filetype(self, filetype):
+        assert filetype in ['json', 'yaml'], f'File type {filetype} not supported'
+        self.filetype = filetype
+        return self.filetype
+
+    def put_json(self, path, data):
+        path = self.get_path(path, filetype=self.filetype)
         self.ensure_path(path)
         with open(path, 'w') as f:
-            json.dump(data, f)
+            json.dump(data, f)   
+
+    def put_yaml(self, path, data):
+        import yaml
+        path = self.get_path(path, filetype='yaml')
+        self.ensure_path(path)
+        with open(path, 'w') as f:
+            yaml.dump(data, f)
+        
+    def put(self, path, data, password=None):
+        self.put_json(path, data)
         if self.private or password != None:
             self.encrypt(path, password=password)
         return {'path': path, 'encrypted': self.is_encrypted(path)}
     
     def shorten_item_path(self, path):
-        return path.replace(self.path+'/', '').replace(f'.{self.file_type}', '')
+        return path.replace(self.path+'/', '').replace(f'.{self.filetype}', '')
 
     def ensure_path(self, path):
         """
@@ -58,10 +71,13 @@ class Store:
             update: bool: if True, update the file if it is too old
 
         """
-        path = self.get_path(path, file_type=self.file_type)
+        path = self.get_path(path, filetype=self.filetype)
         if not os.path.exists(path):
             return default
-        data = self.get_json(path)
+        if self.filetype == 'json':
+            data = self.get_json(path)
+        else:
+            raise NotImplementedError(f'File type {self.filetype} not implemented')
         data = self.validate_data(data)
         update =  update or  bool(max_age != None and self.get_age(path) > max_age)
         if update:
@@ -83,34 +99,34 @@ class Store:
         Get the age of the file
         params
         """
-        path = self.get_path(path, file_type=self.file_type)
+        path = self.get_path(path, filetype=self.filetype)
         if not os.path.exists(path):
             return default
         return time.time() - os.path.getmtime(path)
 
-    def get_path(self, path:str, file_type:Optional[str]=None):
+    def get_path(self, path:str, filetype:Optional[str]=None):
         """
         Get the path of the file
         params
             path: str: the path of the file
-            file_type: str: the file_type of the file (json, txt, etc)
+            filetype: str: the filetype of the file (json, txt, etc)
         return: str: the path of the file
         """
         if  path.startswith('~') or path.startswith('/') or path.startswith('./'):
             path = self.abspath(path)
         elif not path.startswith(self.path):
             path = f'{self.path}/{path}'
-        if file_type != None:
-            file_type = f'.{file_type}'
-            if not path.endswith(file_type):
-                path += file_type
+        if filetype != None:
+            filetype = f'.{filetype}'
+            if not path.endswith(filetype):
+                path += filetype
         return path
 
     def in_path(self, path):
         return path.startswith(self.path)
 
     def rm(self, path):
-        path = self.get_path(path, file_type=self.file_type)
+        path = self.get_path(path, filetype=self.filetype)
         assert os.path.exists(path), f'Failed to find path {path}'
         assert self.in_path(path), f'Path {path} is not in path {self.path}'
         if os.path.isdir(path):
@@ -195,7 +211,7 @@ class Store:
         path = self.get_path(path)
         exists =  os.path.exists(path)
         if not exists:
-            item_path = self.get_path(path, file_type=self.file_type)
+            item_path = self.get_path(path, filetype=self.filetype)
             exists =  os.path.exists(item_path)
         return exists
     def item2age(self):
@@ -230,14 +246,14 @@ class Store:
         return result
 
     def get_json(self, path: str= 'test/a')-> Union[dict, list]:
-        path = self.get_path(path, file_type=self.file_type)
+        path = self.get_path(path, filetype=self.filetype)
         data = self.get_text(path)
         data = json.loads(data)
         return data 
 
     def put_json(self, path: str= 'test/a', data: Union[dict, list]=None) -> str:
         json_data = json.dumps(data, indent=4)
-        path = self.get_path(path, file_type=self.file_type)
+        path = self.get_path(path, filetype=self.filetype)
         self.ensure_path(path)
         with open(path, 'w') as f:
             f.write(json_data)
