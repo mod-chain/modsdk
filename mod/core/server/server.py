@@ -342,7 +342,7 @@ class Server:
         print(f'Serving {mod} on port {port}', color='green', verbose=self.verbose)
         params = {**(params or {}), **extra_params}
         if remote:
-            return m.mod('pm')().forward(mod, params=params, port=port, key=key, cwd=cwd, daemon=daemon, volumes=volumes, env=env)
+            return m.fn('pm/forward')(mod=mod, params=params, port=port, key=key, cwd=cwd, daemon=daemon, volumes=volumes, env=env)
         self.serve_mod(mod=mod, params=params, key=key, public=public, fns=fns, port=port)
 
     def get_public_fns(self, 

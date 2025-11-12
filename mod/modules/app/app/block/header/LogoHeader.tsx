@@ -1,37 +1,16 @@
 'use client'
+import Link from 'next/link'
+import { useSidebarContext } from '@/app/block/context/SidebarContext'
 
-import { useDebounce } from '@/app/hooks/useDebounce'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
-import { CubeIcon } from '@heroicons/react/24/solid'
-import { useSearchContext } from '@/app/block/context/SearchContext'
+export function LogoHeader() {
+  const { toggleSidebar } = useSidebarContext()
 
-export const LogoHeader = () => {
-    const router = useRouter()
-    const { handleSearch } = useSearchContext()
-    const moduleColor = '#10b981'
-    
-    const handleLogoClick = () => {
-      handleSearch('')
-      router.push('/mod/explore')
-    }
-    
-    return (
-    <div className="relative w-14 h-14 flex-shrink-0 cursor-pointer z-50">
-              <motion.div 
-                onClick={handleLogoClick}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.8 }}
-                transition={{ duration: 0.2 }}
-                className='rounded-2xl'
-                style={{ 
-                  backgroundColor: `${moduleColor}15`,
-                  boxShadow: `0 0 30px ${moduleColor}30`
-                }}
-              >
-                <CubeIcon className='h-14 w-14' style={{ color: moduleColor }} />
-              </motion.div>
-    </div>
-    )
+  return (
+    <button
+      onClick={toggleSidebar}
+      className="text-2xl font-bold text-white hover:text-green-400 transition-colors cursor-pointer"
+    >
+      dhub
+    </button>
+  )
 }

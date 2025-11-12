@@ -347,7 +347,7 @@ class Mod:
     def files(self, 
               path='./', 
               search:str = None, 
-              avoid_terms = ['__pycache__', '.git', '.ipynb_checkpoints', 'node_mods', '/artifacts', 'egg-info',  '/private/'], 
+              avoid_terms = ['__pycache__', '.git', '.ipynb_checkpoints', 'node_modules', '/artifacts', 'egg-info',  '/private/', 'node_modules', '/.venv/', '/venv/', '/.env/'], 
               endswith:str = None,
               include_hidden:bool = False, 
               always_include_terms = ['.gitignore', '.dockerignore'],

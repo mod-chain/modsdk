@@ -25,7 +25,7 @@ class App:
         env = {'NEXT_PUBLIC_API_URL': f'http://{ip}:{api_port}'}
         return m.fn('pm/run')(
                     name=mod, 
-                    volumes=[f'{cwd}:/app','/app/node_modules'], 
+                    volumes=[f'{cwd}:/app','/app/node_modules', '~/.mod:/root/.mod', '~/mod:/root/mod'], 
                     cwd=cwd, 
                     image=image,
                     working_dir=f'/{mod}',
