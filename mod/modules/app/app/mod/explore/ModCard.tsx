@@ -3,11 +3,9 @@
 import { ModuleType } from '@/app/types'
 import { text2color, shorten, time2str } from '@/app/utils'
 import { CopyButton } from '@/app/block/CopyButton'
-import { Package, Hash, Clock } from 'lucide-react'
+import { Hash, Clock } from 'lucide-react'
 import { KeyIcon } from '@heroicons/react/24/outline'
-import { CubeIcon, UsersIcon, Bars3Icon } from '@heroicons/react/24/outline'
-
-
+import { CubeIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 
 interface ModCardProps {
@@ -34,69 +32,51 @@ export default function ModCard({ mod }: ModCardProps) {
 
   return (
     <Link href={`/mod/${mod.name}/${mod.key}`}>
-      <div className="group relative border-2 rounded-xl p-4 hover:shadow-xl transition-all duration-300 backdrop-blur-sm overflow-hidden h-full flex flex-col hover:scale-[1.01] bg-black cursor-pointer" style={{ borderColor: borderColor, boxShadow: `0 0 12px ${glowColor}` }}>
+      <div className="group relative border-2 rounded-xl px-4 py-2.5 hover:shadow-xl transition-all duration-300 backdrop-blur-sm overflow-hidden hover:scale-[1.01] bg-black cursor-pointer" style={{ borderColor: borderColor, boxShadow: `0 0 12px ${glowColor}` }}>
         <div className="absolute -inset-1 bg-gradient-to-r opacity-5 group-hover:opacity-10 blur-lg transition-all duration-500 rounded-xl" style={{ background: `linear-gradient(45deg, ${modColor}, transparent, ${modColor})` }} />
         
-        <div className="relative z-10 space-y-2.5 flex-1 flex flex-col">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-2 group/link flex-1 min-w-0">
-                              <CubeIcon className="h-6 w-6"  style={{ color: modColor }} />
+        <div className="relative z-10 flex items-center gap-3">
+          {/* Module Name */}
+          <div className="flex items-center gap-2 min-w-0">
+            <CubeIcon className="h-5 w-5 flex-shrink-0" style={{ color: modColor }} />
+            <code className="text-base font-mono font-bold truncate" style={{ color: modColor }} title={mod.name}>
+              {mod.name}
+            </code>
+          </div>
+          
+          {/* Description - compact */}
+          {mod.desc && (
+            <p className="hidden lg:block text-sm text-white/60 truncate flex-1 min-w-0">{mod.desc}</p>
+          )}
 
-              <div className="flex-1 min-w-0">
-                <code className="text-2xl font-mono font-bold truncate block" style={{ color: modColor }} title={mod.name}>
-                  {mod.name}
-                </code>
-              </div>
- 
-            </div>
-            
-            <div className="flex-shrink-0">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg border" style={{ backgroundColor: `rgba(${userRgb.r}, ${userRgb.g}, ${userRgb.b}, 0.1)`, borderColor: `rgba(${userRgb.r}, ${userRgb.g}, ${userRgb.b}, 0.4)` }}>
-                <Link href={`/user/${mod.key}`} onClick={(e) => e.stopPropagation()} className="hover:scale-110 transition-transform">
-                  <KeyIcon className="w-6 h-6" style={{ color: userColor }} />
-                </Link>
-                <Link href={`/user/${mod.key}`} onClick={(e) => e.stopPropagation()} className="hover:underline">
-                  <code className="text-sm font-mono font-bold" style={{ color: userColor }} title={mod.key}>
-                    {shorten(mod.key, 6, 6)}
-                  </code>
-                </Link>
-                <CopyButton text={mod.key} size="sm" />
-              </div>
-            </div>
+          {/* CID */}
+          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`, borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)` }}>
+            <Hash size={16} strokeWidth={2.5} style={{ color: modColor }} />
+            <code className="text-sm font-mono font-bold" style={{ color: modColor }} title={mod.cid}>
+              {shorten(mod.cid, 4, 4)}
+            </code>
+            <CopyButton text={mod.cid} size="sm" />
           </div>
 
-          <div className="flex-1 min-w-0 space-y-2">
-            {mod.desc && (
-              <p className="text-base text-white/60 line-clamp-2">{mod.desc}</p>
-            )}
+          {/* Updated */}
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`, borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)` }}>
+            <Clock size={16} strokeWidth={2.5} style={{ color: modColor }} />
+            <code className="text-sm font-mono font-bold" style={{ color: modColor }} title={mod.updated}>
+              {time2str(mod.updated)}
+            </code>
+          </div>
 
-            <div className="flex gap-2">
-              <div className="border px-2.5 py-1.5 rounded-lg backdrop-blur-sm flex-1" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`, borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)` }}>
-                <div className="flex items-center gap-1.5 mb-0.5">
-                  <Hash size={16} strokeWidth={2.5} style={{ color: modColor }} />
-                  <span className="text-sm font-bold uppercase tracking-wide" style={{ color: modColor }}>CID</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <code className="text-base font-mono font-bold truncate flex-1" style={{ color: modColor }} title={mod.cid}>
-                    {shorten(mod.cid, 6, 6)}
-                  </code>
-                  <CopyButton text={mod.cid} size="sm" />
-                </div>
-              </div>
-
-              <div className="border px-2.5 py-1.5 rounded-lg backdrop-blur-sm flex-1" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`, borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)` }}>
-                <div className="flex items-center gap-1.5 mb-0.5">
-                  <Clock size={16} strokeWidth={2.5} style={{ color: modColor }} />
-                  <span className="text-sm font-bold uppercase tracking-wide" style={{ color: modColor }}>Updated</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <code className="text-base font-mono font-bold truncate flex-1" style={{ color: modColor }} title={mod.updated}>
-                    {time2str(mod.updated)}
-                  </code>
-                  <CopyButton text={mod.updated} size="sm" />
-                </div>
-              </div>
-            </div>
+          {/* Author */}
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border flex-shrink-0" style={{ backgroundColor: `rgba(${userRgb.r}, ${userRgb.g}, ${userRgb.b}, 0.1)`, borderColor: `rgba(${userRgb.r}, ${userRgb.g}, ${userRgb.b}, 0.4)` }}>
+            <Link href={`/user/${mod.key}`} onClick={(e) => e.stopPropagation()} className="hover:scale-110 transition-transform">
+              <KeyIcon className="w-5 h-5" style={{ color: userColor }} />
+            </Link>
+            <Link href={`/user/${mod.key}`} onClick={(e) => e.stopPropagation()} className="hover:underline">
+              <code className="text-sm font-mono font-bold" style={{ color: userColor }} title={mod.key}>
+                {shorten(mod.key, 4, 4)}
+              </code>
+            </Link>
+            <CopyButton text={mod.key} size="sm" />
           </div>
         </div>
       </div>
