@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { Client } from '@/app/block/client/client'
 import { Loading } from '@/app/block/Loading'
@@ -10,8 +10,9 @@ import { ModContent, ModApi, ModApp } from './tabs'
 import { Footer } from '@/app/block/footer/Footer'
 import ModCard from '@/app/mod/explore/ModCard'
 import { AlertCircle } from 'lucide-react'
+import { text2color } from '@/app/utils'
 
-export default function ModulePage(  ) {
+export default function ModulePage() {
   const params = useParams()
   const { client } = useUserContext()
   const modName = params.mod as string
@@ -22,13 +23,15 @@ export default function ModulePage(  ) {
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'content' | 'api' | 'app'>('content')
 
+  const moduleColor = mod ? text2color(mod.name || mod.key) : '#ffffff'
+
   useEffect(() => {
     const fetchMod = async () => {
       if (!modName || !modKey) return
       setLoading(true)
       setError(null)
       try {
-        const data = await client.call('mod', { mod: modName, key: modKey , content:true, schema:true })
+        const data = await client.call('mod', { mod: modName, key: modKey, content: true, schema: true })
         setMod(data as ModuleType)
       } catch (err: any) {
         console.error('Failed to fetch mod:', err)
@@ -61,6 +64,19 @@ export default function ModulePage(  ) {
     )
   }
 
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(hex)
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : { r: 255, g: 255, b: 255 }
+  }
+
+  const rgb = hexToRgb(moduleColor)
+  const borderColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.4)`
+  const glowColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white flex flex-col">
       <main className="flex-1 px-6 py-8">
@@ -69,27 +85,39 @@ export default function ModulePage(  ) {
             <ModCard mod={mod} />
           </div>
 
-          <div className="bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-blue-500/10 border-2 border-purple-500/30 rounded-2xl overflow-hidden backdrop-blur-xl shadow-2xl shadow-purple-500/20">
-            <div className="flex border-b-2 border-purple-500/30">
-              {(['content', 'api', 'app'] as const).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`flex-1 px-6 py-4 font-black text-lg uppercase tracking-wider transition-all duration-300 ${
-                    activeTab === tab
-                      ? 'bg-gradient-to-r from-purple-500/30 to-pink-500/30 text-purple-200 border-b-4 border-purple-400 shadow-lg'
-                      : 'text-purple-400/60 hover:bg-purple-500/10 hover:text-purple-300'
-                  }`}
-                >
-                  {tab}
-                </button>
-              ))}
+          <div className="rounded-2xl overflow-hidden backdrop-blur-xl shadow-2xl border-2" style={{ backgroundColor: '#0f0f0f', borderColor: borderColor, boxShadow: `0 0 24px ${glowColor}` }}>
+            <div className="flex border-b-2" style={{ borderColor: borderColor }}>
+              {(['content', 'api', 'app'] as const).map((tab) => {
+                const isActive = activeTab === tab
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className="flex-1 px-6 py-4 font-black text-lg uppercase tracking-wider transition-all duration-300 relative overflow-hidden group"
+                    style={{
+                      backgroundColor: isActive ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)` : 'transparent',
+                      color: isActive ? moduleColor : '#6b7280',
+                      borderBottom: isActive ? `4px solid ${moduleColor}` : 'none'
+                    }}
+                  >
+                    {isActive && (
+                      <div 
+                        className="absolute inset-0 opacity-10" 
+                        style={{ 
+                          background: `linear-gradient(135deg, ${moduleColor}, transparent)` 
+                        }}
+                      />
+                    )}
+                    <span className="relative z-10">{tab}</span>
+                  </button>
+                )
+              })}
             </div>
 
-            <div className="p-6 bg-black/40">
+            <div className="p-6" style={{ backgroundColor: '#0a0a0a' }}>
               {activeTab === 'content' && <ModContent mod={mod} />}
               {activeTab === 'api' && <ModApi mod={mod} />}
-              {activeTab === 'app' && <ModApp mod={mod} />}
+              {activeTab === 'app' && <ModApp mod={mod} moduleColor={moduleColor} />}
             </div>
           </div>
         </div>

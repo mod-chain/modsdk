@@ -67,7 +67,7 @@ export function SearchHeader() {
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder="Search mods..."
-            className="bg-black/90 border-2 border-green-500/50 text-white px-4 py-3 pl-12 pr-12 rounded-lg text-lg font-normal hover:bg-black hover:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/70 focus:border-green-500 transition-all shadow-md backdrop-blur-sm"
+            className="bg-black/90 border-2 border-green-500/50 text-white px-4 py-3 pl-12 pr-12 rounded-lg text-lg font-normal hover:bg-black hover:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/70 focus:border-green-500 transition-all shadow-md backdrop-blur-sm mx-auto block"
             style={{height: '56px', width: '400px'}}
           />
           <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/80" />

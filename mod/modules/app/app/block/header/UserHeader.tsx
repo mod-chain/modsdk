@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useUserContext } from '@/app/block/context/UserContext'
-import { UserIcon, ArrowRightOnRectangleIcon, KeyIcon, WalletIcon } from '@heroicons/react/24/outline'
+import { UserIcon, ArrowRightOnRectangleIcon, KeyIcon } from '@heroicons/react/24/outline'
 import { CopyButton } from '@/app/block/CopyButton'
 import 'react-responsive-modal/styles.css'
 import {text2color, shorten} from "@/app/utils";
@@ -12,12 +12,30 @@ import WalletAuthButton from './WalletAuthButton'
 
 export function UserHeader() {
   const {  user, authLoading, signOut } = useUserContext()
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(true)
+  const [isNarrow, setIsNarrow] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    const checkWidth = () => {
+      const narrow = window.innerWidth < 1024
+      setIsNarrow(narrow)
+      if (narrow) {
+        setIsExpanded(false)
+      } else {
+        setIsExpanded(true)
+      }
+    }
+    checkWidth()
+    window.addEventListener('resize', checkWidth)
+    return () => window.removeEventListener('resize', checkWidth)
+  }, [])
 
   const handleSignOut = () => {
     signOut()
-    setIsExpanded(false)
+    if (isNarrow) {
+      setIsExpanded(false)
+    }
   }
 
   const handleUserClick = () => {
@@ -53,8 +71,8 @@ export function UserHeader() {
   return (
     <div 
       className="relative"
-      onMouseEnter={() => setIsExpanded(true)}
-      onMouseLeave={() => setIsExpanded(false)}
+      onMouseEnter={() => !isNarrow && setIsExpanded(true)}
+      onMouseLeave={() => !isNarrow && setIsExpanded(true)}
     >
       <div
         onClick={handleUserClick}
@@ -77,12 +95,14 @@ export function UserHeader() {
             alignItems: 'center',
             justifyContent: 'center'
           }}
+          onClick={(e) => {
+            if (isNarrow) {
+              e.stopPropagation()
+              setIsExpanded(!isExpanded)
+            }
+          }}
         >
-          {walletMode === 'subwallet' ? (
-            <WalletIcon className="w-7 h-7" style={{ color: userColor }} />
-          ) : (
-            <UserIcon className="w-7 h-7" style={{ color: userColor }} />
-          )}
+          <KeyIcon className="w-9 h-9" style={{ color: userColor }} />
         </div>
 
         <div 
@@ -115,11 +135,10 @@ export function UserHeader() {
 
           <div className="flex flex-col min-w-[200px]">
             <div className="flex items-center gap-2">
-              <KeyIcon className="w-4 h-4" style={{ color: userColor }} />
-              <div className="font-mono font-black text-sm truncate max-w-[180px]" style={{ color: userColor }}>
+              <div className="font-mono font-black text-lg truncate max-w-[180px]" style={{ color: userColor }}>
                 {shorten(displayAddress, 8, 8)}
               </div>
-              <span className="text-white/40 font-mono text-xs">({walletType})</span>
+              <span className="text-white/40 font-mono text-base">({walletType})</span>
               <CopyButton content={displayAddress} size="sm" style={{color: userColor}} />
             </div>
           </div>

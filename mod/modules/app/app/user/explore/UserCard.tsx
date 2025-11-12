@@ -27,40 +27,47 @@ export const UserCard = ({ user, mode = 'explore' }: UserCardProps) => {
   const glowColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`
 
   const CardContent = () => (
-    <div className="group relative border rounded-lg px-4 py-3 hover:shadow-lg transition-all duration-200 backdrop-blur-sm bg-black flex items-center gap-3" style={{ borderColor: borderColor, boxShadow: `0 0 8px ${glowColor}` }}>
+    <div className="group relative border rounded-lg px-4 py-3 hover:shadow-lg transition-all duration-200 backdrop-blur-sm bg-black" style={{ borderColor: borderColor, boxShadow: `0 0 8px ${glowColor}` }}>
       <div className="absolute -inset-1 bg-gradient-to-r opacity-5 group-hover:opacity-10 blur transition-all duration-300 rounded-lg" style={{ background: `linear-gradient(45deg, ${userColor}, transparent, ${userColor})` }} />
       
-      <div className="relative z-10 flex items-center gap-3 flex-1 min-w-0">
+      <div className="relative z-10 flex items-center gap-3">
         <div className="flex-shrink-0 p-2 rounded-md border" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1)`, borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.4)` }}>
           <KeyIcon size={24} strokeWidth={2.5} style={{ color: userColor }} />
         </div>
         
-        <div className="flex-1 min-w-0 flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <code className="text-xl font-mono font-bold" style={{ color: userColor }} title={user.key}>
-              {shorten(user.key, 6, 6)}
-            </code>
-            <CopyButton text={user.key} size="sm" />
-          </div>
-          
-          {user.balance !== undefined && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`, borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)` }}>
-              <span className="text-sm font-bold uppercase tracking-wide" style={{ color: userColor }}>Balance:</span>
-              <code className="text-lg font-mono font-bold" style={{ color: userColor }}>
-                {user.balance}
-              </code>
-            </div>
-          )}
-          
-          {user.mods && user.mods.length > 0 && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`, borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)` }}>
-              <span className="text-sm font-bold uppercase tracking-wide" style={{ color: userColor }}>Mods:</span>
-              <code className="text-lg font-mono font-bold" style={{ color: userColor }}>
-                {user.mods.length}
-              </code>
-            </div>
-          )}
+        <div className="flex items-center gap-2">
+          <code className="text-xl font-mono font-bold" style={{ color: userColor }} title={user.key}>
+            {shorten(user.key, 6, 6)}
+          </code>
+          <CopyButton text={user.key} size="sm" />
         </div>
+        
+        {user.crypto_type && (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`, borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)` }}>
+            <span className="text-sm font-bold uppercase tracking-wide" style={{ color: userColor }}>Crypto:</span>
+            <code className="text-lg font-mono font-bold" style={{ color: userColor }}>
+              {user.crypto_type}
+            </code>
+          </div>
+        )}
+        
+        {user.balance !== undefined && (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`, borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)` }}>
+            <span className="text-sm font-bold uppercase tracking-wide" style={{ color: userColor }}>Balance:</span>
+            <code className="text-lg font-mono font-bold" style={{ color: userColor }}>
+              {user.balance}
+            </code>
+          </div>
+        )}
+        
+        {user.mods && user.mods.length > 0 && (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`, borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)` }}>
+            <span className="text-sm font-bold uppercase tracking-wide" style={{ color: userColor }}>Mods:</span>
+            <code className="text-lg font-mono font-bold" style={{ color: userColor }}>
+              {user.mods.length}
+            </code>
+          </div>
+        )}
       </div>
     </div>
   )

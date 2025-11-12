@@ -31,7 +31,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b-2 bg-black" style={{ borderColor: '#00ff0040' }}>
-      <div className="flex h-20 items-center justify-between px-4 md:px-6">
+      <div className="flex h-20 items-center px-4 md:px-6" style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr' }}>
         <div className="flex items-center gap-6">
           <LogoHeader />
           
@@ -72,9 +72,11 @@ export function Header() {
           )}
         </div>
         
-        <div className="flex items-center gap-4">
+        <div className="flex items-center justify-center">
           <SearchHeader />
-          
+        </div>
+        
+        <div className="flex items-center gap-4 justify-end">
           {isNarrow && (
             <div className="relative">
               <button 
