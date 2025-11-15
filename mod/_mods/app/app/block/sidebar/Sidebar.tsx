@@ -52,10 +52,10 @@ export function Sidebar() {
                       className="shrink-0 transition-transform duration-200 group-hover:scale-110"
                       style={{
                         color: isActive ? '#4ade80' : '#9ca3af',
-                        width: '1.75rem',
-                        height: '1.75rem',
-                        minWidth: '1.75rem',
-                        minHeight: '1.75rem'
+                        width: '2.5rem',
+                        height: '2.5rem',
+                        minWidth: '2.5rem',
+                        minHeight: '2.5rem'
                       }}
                       aria-hidden="true"
                     />

@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Package, Upload, Github, Database, Send, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
+import { Package, Upload, Github, Database, Send, Loader2, CheckCircle, AlertCircle, Sparkles, Zap } from 'lucide-react'
 import {useUserContext} from '@/app/block/context/UserContext'
 import { Key } from '@/app/block/key'
 import { web3Enable, web3FromAddress } from '@polkadot/extension-dapp'
@@ -188,7 +188,6 @@ export const CreateMod = ( ) => {
         address: signerAddress
       })
       
-      // Create ModuleType object from response
       const newMod: ModuleType = {
         name: modName.trim() || response?.name || 'New Module',
         key: signerAddress,
@@ -214,194 +213,194 @@ export const CreateMod = ( ) => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn px-4 py-6">
-      {(isSubwalletEnabled || isLocalWallet) && (
-        <div className="p-5 rounded-lg bg-gradient-to-br from-purple-500/10 to-transparent border border-purple-500/30">
-          <div className="flex items-center gap-3 text-purple-400 text-lg font-mono">
-            <CheckCircle size={20} />
-            <span>{isSubwalletEnabled ? 'SUBWALLET MODE' : 'LOCAL WALLET MODE'} - Signing with {isSubwalletEnabled ? 'extension' : 'local key'}</span>
-          </div>
-          {walletAddress && (
-            <div className="text-purple-500/70 text-base font-mono mt-2">
-              {walletAddress.slice(0, 8)}...{walletAddress.slice(-6)}
-            </div>
-          )}
-        </div>
-      )}
-
-      {!isSubwalletEnabled && !isLocalWallet && (
-        <div className="p-5 rounded-lg bg-gradient-to-br from-red-500/10 to-transparent border border-red-500/30">
-          <div className="flex items-center gap-3 text-red-400 text-lg font-mono">
-            <AlertCircle size={20} />
-            <span>NO WALLET CONNECTED - Please sign in with SubWallet or Local Key to create modules</span>
-          </div>
-        </div>
-      )}
-
-      <div className="space-y-6 p-6 rounded-lg bg-gradient-to-br from-purple-500/5 to-transparent border border-purple-500/20">
-        <div className="flex items-center gap-3 text-purple-500/70 text-xl font-mono uppercase mb-4">
-          <Package size={24} />
-          <span>CREATE MODULE</span>
+    <div className="min-h-screen bg-black">
+      <div className="max-w-4xl mx-auto px-6 py-12 space-y-8">
+        
+        {/* HEADER */}
+        <div className="text-center space-y-3 mb-10">
+          <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400">
+            CREATE MODULE
+          </h1>
+          <p className="text-gray-400 text-lg font-mono">
+            Deploy your module to the network
+          </p>
         </div>
 
-        <div className="space-y-6">
-          <div>
-            <label className="text-base text-purple-500/70 font-mono uppercase mb-3 block flex items-center gap-2">
-              <span>Github or Mod Ipfs URL</span>
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={modUrl}
-                onChange={(e) => { handleUrlChange(e) }}
-                placeholder="https://github.com/user/repo or ipfs://Qm..."
-                className="w-full bg-black/50 border border-purple-500/30 rounded px-4 py-4 pl-12 text-purple-400 font-mono text-lg placeholder-purple-600/50 focus:outline-none focus:border-purple-500"
-              />
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-500/50">
-                {modUrl.includes('github') ? <Github size={20} /> : <Database size={20} />}
+
+        {/* MAIN FORM */}
+        <div className="rounded-xl bg-black border-2 border-cyan-500/40 p-8 shadow-[0_0_40px_rgba(6,182,212,0.2)]">
+          <div className="space-y-6">
+            {/* URL INPUT */}
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 text-cyan-300 font-bold text-sm uppercase tracking-wider">
+                <Github size={18} />
+                <span>Repository URL or IPFS Hash</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={modUrl}
+                  onChange={handleUrlChange}
+                  placeholder="https://github.com/username/repo or ipfs://Qm..."
+                  className="w-full bg-black/90 border-2 border-cyan-500/40 rounded-lg px-4 py-4 pl-12 text-cyan-300 font-mono text-base placeholder-cyan-600/50 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all"
+                />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-500/70">
+                  {modUrl.includes('github') ? <Github size={22} /> : <Database size={22} />}
+                </div>
               </div>
             </div>
-          </div>
 
-          <div>
-            <label className="text-base text-purple-500/70 font-mono uppercase mb-3 block">
-              Module Name
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={modName}
-                onChange={handleNameChange}
-                placeholder="Enter module name"
-                className="w-full bg-black/50 border border-purple-500/30 rounded px-4 py-4 pl-12 text-purple-400 font-mono text-lg placeholder-purple-600/50 focus:outline-none focus:border-purple-500"
-              />
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-500/50">
-                <Package size={20} />
+            {/* NAME INPUT */}
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 text-cyan-300 font-bold text-sm uppercase tracking-wider">
+                <Package size={18} />
+                <span>Module Name</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={modName}
+                  onChange={handleNameChange}
+                  placeholder="my-awesome-module"
+                  className="w-full bg-black/90 border-2 border-cyan-500/40 rounded-lg px-4 py-4 pl-12 text-cyan-300 font-mono text-base placeholder-cyan-600/50 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all"
+                />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-500/70">
+                  <Package size={22} />
+                </div>
               </div>
             </div>
-          </div>
 
-          <div>
-            <label className="text-base text-purple-500/70 font-mono uppercase mb-3 block">
-              Collateral (Float)
-            </label>
-            <div className="relative">
-              <input
-                type="number"
-                step="0.01"
-                value={collateral}
-                onChange={(e) => setCollateral(parseFloat(e.target.value) || 0.0)}
-                placeholder="0.00"
-                className="w-full bg-black/50 border border-purple-500/30 rounded px-4 py-4 pl-12 text-purple-400 font-mono text-lg placeholder-purple-600/50 focus:outline-none focus:border-purple-500"
-              />
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-500/50">
-                <Database size={20} />
+            {/* COLLATERAL INPUT */}
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 text-cyan-300 font-bold text-sm uppercase tracking-wider">
+                <Database size={18} />
+                <span>Collateral Amount</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  step="0.01"
+                  value={collateral}
+                  onChange={(e) => setCollateral(parseFloat(e.target.value) || 0.0)}
+                  placeholder="0.00"
+                  className="w-full bg-black/90 border-2 border-cyan-500/40 rounded-lg px-4 py-4 pl-12 text-cyan-300 font-mono text-base placeholder-cyan-600/50 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all"
+                />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-500/70">
+                  <Database size={22} />
+                </div>
               </div>
             </div>
-          </div>
 
-          <button
-            onClick={generateRegInfo}
-            disabled={!modUrl.trim() || (!isSubwalletEnabled && !isLocalWallet) || isPreviewLoading}
-            className="w-full py-4 border border-blue-500/50 text-blue-400 hover:bg-blue-500/10 hover:border-blue-500 transition-all rounded-lg font-mono uppercase text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 group"
-          >
-            {isPreviewLoading ? (
-              <>
-                <Loader2 size={24} className="animate-spin" />
-                <span>Loading Preview...</span>
-              </>
-            ) : (
-              <>
-                <CheckCircle size={24} className="group-hover:scale-110 transition-transform" />
-                <span>Preview JSON Before Submit</span>
-              </>
+            {/* PREVIEW BUTTON */}
+            <button
+              onClick={generateRegInfo}
+              disabled={!modUrl.trim() || (!isSubwalletEnabled && !isLocalWallet) || isPreviewLoading}
+              className="w-full py-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 border-2 border-cyan-400/50 text-white font-bold rounded-lg uppercase text-base disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all shadow-[0_0_25px_rgba(6,182,212,0.35)] hover:shadow-[0_0_35px_rgba(6,182,212,0.5)]"
+            >
+              {isPreviewLoading ? (
+                <>
+                  <Loader2 size={22} className="animate-spin" />
+                  <span>GENERATING PREVIEW...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle size={22} />
+                  <span>PREVIEW MODULE JSON</span>
+                </>
+              )}
+            </button>
+
+            {/* PREVIEW JSON */}
+            {regInfo && (
+              <div className="rounded-lg bg-black/80 border-2 border-blue-500/40 p-6 shadow-[0_0_20px_rgba(59,130,246,0.15)]">
+                <div className="flex items-center gap-2 text-blue-300 font-bold text-sm uppercase mb-4 tracking-wider">
+                  <CheckCircle size={20} />
+                  <span>JSON PREVIEW</span>
+                </div>
+                <pre className="text-blue-300 font-mono text-xs overflow-x-auto bg-black/90 p-5 rounded-lg border-2 border-blue-500/30 max-h-80 overflow-y-auto">
+                  {regInfo}
+                </pre>
+              </div>
             )}
-          </button>
 
-          {regInfo && (
-            <div className="p-5 rounded-lg bg-gradient-to-br from-blue-500/5 to-transparent border border-blue-500/20">
-              <div className="flex items-center gap-3 text-blue-500/70 text-lg font-mono uppercase mb-3">
-                <CheckCircle size={20} />
-                <span>JSON Preview - Verify Before Submitting</span>
-              </div>
-              <pre className="text-blue-400 font-mono text-base overflow-x-auto bg-black/50 p-4 rounded border border-blue-500/20">
-                {regInfo}
-              </pre>
-            </div>
-          )}
-
-          <button
-            onClick={handleCreateModule}
-            disabled={!modUrl.trim() || isLoading || (!isSubwalletEnabled && !isLocalWallet)}
-            className="w-full py-4 border border-purple-500/50 text-purple-400 hover:bg-purple-500/10 hover:border-purple-500 transition-all rounded-lg font-mono uppercase text-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 group"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 size={24} className="animate-spin" />
-                <span>Creating Module...</span>
-              </>
-            ) : (
-              <>
-                <Upload size={24} className="group-hover:translate-y-[-2px] transition-transform" />
-                <span>Create Module</span>
-              </>
-            )}
-          </button>
+            {/* CREATE BUTTON */}
+            <button
+              onClick={handleCreateModule}
+              disabled={!modUrl.trim() || isLoading || (!isSubwalletEnabled && !isLocalWallet)}
+              className="w-full py-5 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 hover:from-purple-500 hover:via-pink-500 hover:to-purple-500 border-2 border-purple-400/50 text-white font-bold rounded-lg uppercase text-lg disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all shadow-[0_0_30px_rgba(168,85,247,0.4)] hover:shadow-[0_0_45px_rgba(168,85,247,0.6)]"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 size={24} className="animate-spin" />
+                  <span>DEPLOYING MODULE...</span>
+                </>
+              ) : (
+                <>
+                  <Upload size={24} />
+                  <span>DEPLOY MODULE</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
+
+        {/* CREATED MODULE CARD */}
+        {createdMod && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-center gap-3 text-green-400 font-bold text-xl uppercase tracking-wide">
+              <CheckCircle size={26} />
+              <span>MODULE SUCCESSFULLY DEPLOYED</span>
+            </div>
+            <ModCard mod={createdMod} card_enabled={true} />
+          </div>
+        )}
+
+        {/* SIGNATURE INFO */}
+        {signatureInfo && (
+          <div className="rounded-lg bg-black/80 border-2 border-cyan-500/40 p-6 shadow-[0_0_25px_rgba(6,182,212,0.15)]">
+            <div className="flex items-center gap-2 text-cyan-300 font-bold text-sm uppercase mb-5 tracking-wider">
+              <CheckCircle size={20} />
+              <span>SIGNATURE VERIFICATION</span>
+            </div>
+            <div className="space-y-4 text-cyan-300 font-mono text-sm">
+              <div className="bg-black/90 p-4 rounded-lg border-2 border-cyan-500/30">
+                <span className="text-cyan-400/80 block mb-2 font-bold uppercase text-xs">ADDRESS:</span>
+                <p className="break-all text-cyan-300">{signatureInfo.address}</p>
+              </div>
+              <div className="bg-black/90 p-4 rounded-lg border-2 border-cyan-500/30">
+                <span className="text-cyan-400/80 block mb-2 font-bold uppercase text-xs">TIMESTAMP:</span>
+                <p className="text-cyan-300">{new Date(signatureInfo.timestamp).toISOString()}</p>
+              </div>
+              <div className="bg-black/90 p-4 rounded-lg border-2 border-cyan-500/30">
+                <span className="text-cyan-400/80 block mb-2 font-bold uppercase text-xs">SIGNATURE:</span>
+                <p className="break-all text-cyan-300 text-xs">{signatureInfo.signature}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ERROR MESSAGE */}
+        {error && (
+          <div className="rounded-lg bg-black/80 border-2 border-red-500/50 p-6 shadow-[0_0_25px_rgba(239,68,68,0.2)]">
+            <div className="flex items-center gap-2 text-red-300 font-bold text-sm uppercase mb-3 tracking-wider">
+              <AlertCircle size={20} />
+              <span>ERROR</span>
+            </div>
+            <p className="text-red-300 font-mono text-sm bg-black/90 p-4 rounded-lg border-2 border-red-500/30">{error}</p>
+          </div>
+        )}
+
+        {/* SUCCESS MESSAGE */}
+        {success && (
+          <div className="rounded-lg bg-black/80 border-2 border-green-500/50 p-6 shadow-[0_0_25px_rgba(34,197,94,0.2)]">
+            <div className="flex items-center gap-2 text-green-300 font-bold text-sm uppercase mb-3 tracking-wider">
+              <CheckCircle size={20} />
+              <span>SUCCESS</span>
+            </div>
+            <p className="text-green-300 font-mono text-sm bg-black/90 p-4 rounded-lg border-2 border-green-500/30">{success}</p>
+          </div>
+        )}
       </div>
-
-      {createdMod && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 text-green-500/70 text-lg font-mono uppercase">
-            <CheckCircle size={20} />
-            <span>NEW MODULE CREATED</span>
-          </div>
-          <ModCard mod={createdMod} card_enabled={true} />
-        </div>
-      )}
-
-      {signatureInfo && (
-        <div className="p-5 rounded-lg bg-gradient-to-br from-blue-500/5 to-transparent border border-blue-500/20">
-          <div className="flex items-center gap-3 text-blue-500/70 text-lg font-mono uppercase mb-3">
-            <CheckCircle size={20} />
-            <span>Signature Details</span>
-          </div>
-          <div className="space-y-3 text-blue-400 font-mono text-base">
-            <div>
-              <span className="text-blue-500/70">Address:</span>
-              <p className="break-all">{signatureInfo.address}</p>
-            </div>
-            <div>
-              <span className="text-blue-500/70">Timestamp:</span>
-              <p>{new Date(signatureInfo.timestamp).toISOString()}</p>
-            </div>
-            <div>
-              <span className="text-blue-500/70">Signature:</span>
-              <p className="break-all">{signatureInfo.signature}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {error && (
-        <div className="p-5 rounded-lg bg-gradient-to-br from-red-500/5 to-transparent border border-red-500/20">
-          <div className="flex items-center gap-3 text-red-500/70 text-lg font-mono uppercase mb-3">
-            <AlertCircle size={20} />
-            <span>Error</span>
-          </div>
-          <p className="text-red-400 font-mono text-base">{error}</p>
-        </div>
-      )}
-
-      {success && (
-        <div className="p-5 rounded-lg bg-gradient-to-br from-green-500/5 to-transparent border border-green-500/20">
-          <div className="flex items-center gap-3 text-green-500/70 text-lg font-mono uppercase mb-3">
-            <CheckCircle size={20} />
-            <span>Success</span>
-          </div>
-          <p className="text-green-400 font-mono text-base">{success}</p>
-        </div>
-      )}
     </div>
   )
 }

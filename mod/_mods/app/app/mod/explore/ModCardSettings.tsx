@@ -37,7 +37,7 @@ export function ModCardSettings({ sort, onSortChange, columns, onColumnsChange, 
       </button>
 
       {isExpanded && (
-        <div className="absolute top-full left-0 mt-2 z-50 flex items-center gap-3 px-4 py-3 bg-black/95 border border-purple-500/40 rounded-lg backdrop-blur-xl shadow-2xl shadow-purple-500/30 min-w-max">
+        <div className="absolute top-0 right-full mr-2 z-50 flex items-center gap-3 px-4 py-3 bg-black/95 border border-purple-500/40 rounded-lg backdrop-blur-xl shadow-2xl shadow-purple-500/30 min-w-max">
           <div className="relative">
             <select
               value={sort}

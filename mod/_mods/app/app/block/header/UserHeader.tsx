@@ -9,11 +9,13 @@ import {text2color, shorten} from "@/app/utils";
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import WalletAuthButton from './WalletAuthButton'
+import { fetchModBalance } from '@/app/lib/wallet/fetchModBalance'
 
 export function UserHeader() {
-  const {  user, authLoading, signOut } = useUserContext()
+  const {  user, authLoading, signOut, client } = useUserContext()
   const [isExpanded, setIsExpanded] = useState(true)
   const [isNarrow, setIsNarrow] = useState(false)
+  const [balance, setBalance] = useState<number | undefined>(undefined)
   const router = useRouter()
 
   useEffect(() => {
@@ -30,6 +32,21 @@ export function UserHeader() {
     window.addEventListener('resize', checkWidth)
     return () => window.removeEventListener('resize', checkWidth)
   }, [])
+
+  useEffect(() => {
+    const loadBalance = async () => {
+      if (user?.address) {
+        const result = await client.call('balance', { key_address: user.address} )
+        if (result.success && result.balance) {
+          const freeBalance = parseFloat(result.balance.free) / 1e9
+          setBalance(freeBalance)
+        }
+      }
+    }
+    loadBalance()
+    const interval = setInterval(loadBalance, 10000)
+    return () => clearInterval(interval)
+  }, [user?.address])
 
   const handleSignOut = () => {
     signOut()
@@ -115,11 +132,10 @@ export function UserHeader() {
           }}
         >
 
-          {user?.balance !== undefined && (
+          {balance !== undefined && (
             <div className="flex flex-col">
-              <div className="text-xs text-white/60 font-bold uppercase tracking-wider">Balance</div>
               <div className="font-black text-lg" style={{ color: userColor }}>
-                {user.balance.toFixed(2)}
+                {balance.toFixed(2)}
               </div>
             </div>
           )}

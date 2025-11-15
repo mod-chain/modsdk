@@ -66,14 +66,14 @@ export function Header() {
                 <button
                   onClick={() => setSearchCollapsed(false)}
                   className="p-3 rounded-lg border-2 border-white/40 bg-white/15 hover:bg-white/20 transition-all active:scale-95"
-                  style={{height: '56px', width: '56px'}}
+                  style={{height: '64px', width: '64px'}}
                   title="Search"
                 >
-                  <MagnifyingGlassIcon className="w-6 h-6 text-gray-400" />
+                  <MagnifyingGlassIcon className="w-8 h-8 text-gray-400" />
                 </button>
               ) : (
                 <div className="relative">
-                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400" />
+                  <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-7 h-7 text-gray-400" />
                   <input
                     type="text"
                     value={inputValue}
@@ -81,7 +81,7 @@ export function Header() {
                     onKeyDown={handleKeyDown}
                     onBlur={() => !inputValue && setSearchCollapsed(window.innerWidth < 1200)}
                     placeholder="Search mods..."
-                    className="bg-white/5 border border-white/10 text-white pl-11 pr-4 py-2.5 rounded-lg text-lg hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 transition-all w-72"
+                    className="bg-white/5 border border-white/10 text-white pl-14 pr-5 py-3.5 rounded-lg text-xl hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 transition-all w-80"
                     autoFocus={!searchCollapsed}
                   />
                 </div>

@@ -7,7 +7,7 @@ import { ModCardSettings } from './ModCardSettings'
 import { ModuleType } from '@/app/types'
 import { useSearchContext } from '@/app/block/context/SearchContext'
 import { useUserContext } from '@/app/block/context/UserContext'
-import { X, RotateCcw, Sparkles } from 'lucide-react'
+import { X, RotateCcw, Sparkles, Maximize2, Minimize2 } from 'lucide-react'
 
 type SortKey = 'recent' | 'name' | 'author' | 'balance' | 'updated' | 'created'
 
@@ -36,6 +36,7 @@ export default function Modules() {
     }
     return ''
   })
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   const searchTerm = searchFilters.searchTerm?.trim() || ''
 
@@ -122,18 +123,41 @@ export default function Modules() {
     4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
   }[columns] || 'grid-cols-1 md:grid-cols-2'
 
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen)
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black text-white">
+    <div className={`${isFullscreen ? 'fixed inset-0 z-[9999]' : 'min-h-screen'} bg-gradient-to-br from-black via-gray-900 to-black text-white transition-all duration-300`}>
       <main className="flex-1 px-2 pt-0 pb-0" role="main">
         <div className="mx-auto max-w-7xl mb-4">
-          <ModCardSettings
-            sort={sort}
-            onSortChange={setSort}
-            columns={columns}
-            onColumnsChange={setColumns}
-            userFilter={userFilter}
-            onUserFilterChange={setUserFilter}
-          />
+          <div className="flex items-center justify-between gap-4">
+            <ModCardSettings
+              sort={sort}
+              onSortChange={setSort}
+              columns={columns}
+              onColumnsChange={setColumns}
+              userFilter={userFilter}
+              onUserFilterChange={setUserFilter}
+            />
+            <button
+              onClick={toggleFullscreen}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 border border-blue-500/40 rounded-lg backdrop-blur-xl hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all shadow-lg shadow-blue-500/20"
+              title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+            >
+              {isFullscreen ? (
+                <>
+                  <Minimize2 className="w-5 h-5 text-blue-300" />
+                  <span className="text-sm font-bold text-blue-300 uppercase">Exit</span>
+                </>
+              ) : (
+                <>
+                  <Maximize2 className="w-5 h-5 text-blue-300" />
+                  <span className="text-sm font-bold text-blue-300 uppercase">Expand</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -179,7 +203,7 @@ export default function Modules() {
           </div>
         )}
 
-        <div className={`mx-auto max-w-7xl grid ${gridColsClass} gap-6`}>
+        <div className={`mx-auto max-w-7xl grid ${gridColsClass} gap-6 ${isFullscreen ? 'overflow-y-auto max-h-[calc(100vh-120px)]' : ''}`}>
           {mods.map((mod) => (
             <div
               key={`${mod.name}-${mod.key}`}
