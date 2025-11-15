@@ -31,44 +31,48 @@ export const UserCard = ({ user, mode = 'explore' }: UserCardProps) => {
     <div className="group relative border rounded-lg px-4 py-3 hover:shadow-lg transition-all duration-200 backdrop-blur-sm bg-black" style={{ borderColor: borderColor, boxShadow: `0 0 8px ${glowColor}` }}>
       <div className="absolute -inset-1 bg-gradient-to-r opacity-5 group-hover:opacity-10 blur transition-all duration-300 rounded-lg" style={{ background: `linear-gradient(45deg, ${userColor}, transparent, ${userColor})` }} />
       
-      <div className="relative z-10 flex items-center gap-3">
-        <div className="flex-shrink-0 p-2 rounded-md border" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1)`, borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.4)` }}>
-          <KeyIcon className="w-9 h-9" style={{ color: userColor }} />
+      <div className="relative z-10 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex-shrink-0 p-2 rounded-md border" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1)`, borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.4)` }}>
+            <KeyIcon className="w-9 h-9" style={{ color: userColor }} />
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <code className="text-xl font-mono font-bold" style={{ color: userColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }} title={user.key}>
+              {shorten(user.key, 6, 6)}
+            </code>
+            <CopyButton text={user.key} size="sm" />
+          </div>
         </div>
         
         <div className="flex items-center gap-2">
-          <code className="text-xl font-mono font-bold" style={{ color: userColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }} title={user.key}>
-            {shorten(user.key, 6, 6)}
-          </code>
-          <CopyButton text={user.key} size="sm" />
+          {user.crypto_type && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`, borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`, minWidth: '120px' }}>
+              <span className="text-sm font-bold uppercase tracking-wide" style={{ color: userColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }}>Crypto:</span>
+              <code className="text-lg font-mono font-bold" style={{ color: userColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }}>
+                {user.crypto_type}
+              </code>
+            </div>
+          )}
+          
+          {user.balance !== undefined && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`, borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`, minWidth: '120px' }}>
+              <span className="text-sm font-bold uppercase tracking-wide" style={{ color: userColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }}>Balance:</span>
+              <code className="text-lg font-mono font-bold" style={{ color: userColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }}>
+                {Number(user.balance).toFixed(2)}
+              </code>
+            </div>
+          )}
+          
+          {user.mods && user.mods.length > 0 && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`, borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)`, minWidth: '120px' }}>
+              <span className="text-sm font-bold uppercase tracking-wide" style={{ color: userColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }}>Mods:</span>
+              <code className="text-lg font-mono font-bold" style={{ color: userColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }}>
+                {user.mods.length}
+              </code>
+            </div>
+          )}
         </div>
-        
-        {user.crypto_type && (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`, borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)` }}>
-            <span className="text-sm font-bold uppercase tracking-wide" style={{ color: userColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }}>Crypto:</span>
-            <code className="text-lg font-mono font-bold" style={{ color: userColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }}>
-              {user.crypto_type}
-            </code>
-          </div>
-        )}
-        
-        {user.balance !== undefined && (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`, borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)` }}>
-            <span className="text-sm font-bold uppercase tracking-wide" style={{ color: userColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }}>Balance:</span>
-            <code className="text-lg font-mono font-bold" style={{ color: userColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }}>
-              {user.balance}
-            </code>
-          </div>
-        )}
-        
-        {user.mods && user.mods.length > 0 && (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`, borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)` }}>
-            <span className="text-sm font-bold uppercase tracking-wide" style={{ color: userColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }}>Mods:</span>
-            <code className="text-lg font-mono font-bold" style={{ color: userColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }}>
-              {user.mods.length}
-            </code>
-          </div>
-        )}
       </div>
     </div>
   )

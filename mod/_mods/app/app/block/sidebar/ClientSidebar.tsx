@@ -8,7 +8,7 @@ export function ClientSidebar({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Sidebar />
-      <main className="pt-24 transition-all duration-300" style={{ marginLeft: 'var(--sidebar-width, 64px)', paddingLeft: '2rem' }}>
+      <main className="pt-24 transition-all duration-300" style={{ marginLeft: 'var(--sidebar-width, 64px)', paddingLeft: '0' }}>
         <div className="min-h-screen">
           {children}
         </div>

@@ -1,5 +1,6 @@
 import {Auth, AuthHeaders} from '@/app/block/client/auth';
 import {Key} from '@/app/block/key';
+import config from '@/tailwind.config';
 
 
 export class Client {
@@ -7,19 +8,11 @@ export class Client {
   public key: Key | undefined;
   public auth: Auth;
 
-  constructor(url?: string, key?: Key  , mode: string = 'http') {
-    this.url = this.getUrl(url, mode);
-
+  constructor(url?: string, key?: Key ) {
+    this.url = process.env.NEXT_PUBLIC_API_URL || config.api_url || 'http://localhost:8000/api';
+    console.log('Client initialized with URL:', this.url);
     this.key = key;
     this.auth = new Auth(key);
-  }
-
-  public getUrl(url?: string, mode: string = 'http'): string {
-    url = url || process.env.API_URL || 'localhost:8000';
-    if (!url.startsWith(mode + '://')) {
-      url = mode + '://' + url;
-    }
-    return url;
   }
 
   public async call(fn: string = 'info', params: Record<string, any> | FormData = {}, cost = 0, headers: any = {}): Promise<any> {
@@ -30,8 +23,11 @@ export class Client {
     
     body = JSON.stringify(params);
     headers['Content-Type'] = 'application/json';
+    headers['Accept'] = 'application/json';
+    headers['Access-Control-Request-Method']
     
     const url: string = `${this.url}/${fn}`;
+    console.log(`Making API call to ${url} with params:`, params, 'and headers:', headers);
     
     try {
       const response = await fetch(url, {

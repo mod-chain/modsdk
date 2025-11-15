@@ -1,40 +1,37 @@
+'use client'
 
-export const dynamic = 'force-dynamic';
-import { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
+import { Inter } from 'next/font/google'
+import { Sidebar } from '@/app/block/sidebar/Sidebar'
 import { Header } from '@/app/block/header/Header'
+import { Footer } from '@/app/block/footer/Footer'
 import { UserProvider } from '@/app/block/context/UserContext'
 import { SearchProvider } from '@/app/block/context/SearchContext'
 import { SidebarProvider } from '@/app/block/context/SidebarContext'
-import { ClientSidebar } from '@/app/block/sidebar/ClientSidebar'
-import "react-responsive-modal/styles.css"
-import "@/app/globals.css"
-
-export const metadata: Metadata = {
-  title: "dhub",
-  description: "dhub - the hub for mods. built with commune-ai/commune",
-  robots: 'all',
-  icons: [{ rel: 'icon', url: '/favicon.ico' }]
-}
 
 const inter = Inter({ subsets: ['latin'] })
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
     <html lang="en">
-      <body className={`${inter.className} h-full relative bg-black`}>
+      <body className={inter.className}>
         <UserProvider>
           <SearchProvider>
             <SidebarProvider>
-              <Header />
-              <ClientSidebar>
-                {children}
-              </ClientSidebar>
+              <div className="flex h-screen bg-black">
+                <Sidebar />
+                <div className="flex-1 flex flex-col" style={{ marginLeft: '80px' }}>
+                  <Header />
+                  <main className="flex-1 overflow-auto">
+                    {children}
+                  </main>
+                  <Footer />
+                </div>
+              </div>
             </SidebarProvider>
           </SearchProvider>
         </UserProvider>

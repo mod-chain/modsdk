@@ -43,14 +43,12 @@ class Client:
         params.update(extra_kwargs)   
 
         headers = self.auth.forward(dict(fn=fn, params=params), key=key, cost=cost)
-
-        with requests.Session() as conn:
-            try:
-                response = conn.post( url, json=params,  headers=headers, timeout=timeout, stream=stream)
-            except requests.exceptions.ConnectionError as e:
-                url = url.replace('0.0.0.0', self.get_mod_from_url('/'.join(url.split('/')[2:-2]))) 
-                response = conn.post( url, json=params,  headers=headers, timeout=timeout, stream=stream) 
-
+        headers.update({
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        })
+        print(f'Client forwarding to {url} with params: {params} and headers: {headers}')
+        response = requests.post( url, json=params,  headers=headers, timeout=timeout, stream=stream)
         # step 5: handle the response
         if response.status_code != 200:
             raise Exception(response.text)
@@ -100,7 +98,7 @@ class Client:
         url = self.namespace.get(url, url)
         if not url.startswith(self.mode):
             url = f'{self.mode}://{url}'
-        return url + '/' + fn + '/'
+        return url + '/' + fn 
 
     def get_mod_from_url(self, url:str):
         """

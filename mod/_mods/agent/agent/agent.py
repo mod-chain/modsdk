@@ -265,3 +265,27 @@ class Dev:
             verbose=True
         )
         return result
+
+    def sand(self):
+        import requests
+
+        url = "https://api.modchain.ai/mods"
+
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            # include any auth headers or keys the API requires
+            # "Authorization": "Bearer YOUR_TOKEN",
+        }
+
+        payload = {
+            # whatever JSON body the endpoint expects
+        }
+
+        response = requests.post(url, json=payload, headers=headers, timeout=30)
+
+        if response.ok:
+            data = response.json()
+            print(data)
+        else:
+            print(f"Request failed ({response.status_code}): {response.text}")

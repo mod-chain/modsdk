@@ -400,6 +400,9 @@ class Server:
             return info_ 
         self.mod.info = get_info
         self.app = FastAPI()
+        @self.app.options("/{fn}")
+        async def options_handler(fn: str):
+            return Response(status_code=204)
         self.app.add_middleware(CORSMiddleware,allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
         def server_fn(fn: str, request: Request):
             try:

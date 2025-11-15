@@ -46,9 +46,9 @@ export function UserHeader() {
 
   if (authLoading) {
     return (
-      <div className="flex items-center gap-3 px-6 py-4 rounded-2xl border-2 backdrop-blur-xl" style={{height: '60px', borderColor: '#00ff0080', backgroundColor: '#00ff0015', boxShadow: '0 0 20px #00ff0030'}}>
+      <div className="flex items-center gap-3 px-6 py-4 rounded-2xl border-2 backdrop-blur-xl shadow-2xl" style={{height: '60px', minWidth: '60px', borderColor: '#00ff0080', backgroundColor: '#00ff0015', boxShadow: '0 0 30px #00ff0040'}}>
         <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-        <span className="text-xl text-white/70 font-bold">Loading...</span>
+        <span className="text-xl text-white/70 font-bold hidden sm:inline">Loading...</span>
       </div>
     )
   }
@@ -69,7 +69,7 @@ export function UserHeader() {
 
   return (
     <div 
-      className="relative"
+      className="relative flex-shrink-0"
       onMouseEnter={() => !isNarrow && setIsExpanded(true)}
       onMouseLeave={() => !isNarrow && setIsExpanded(true)}
     >
@@ -79,8 +79,9 @@ export function UserHeader() {
         style={{
           borderColor: `${userColor}80`,
           backgroundColor: `${userColor}15`,
-          boxShadow: `0 0 20px ${userColor}30`,
+          boxShadow: `0 0 30px ${userColor}40`,
           height: '60px',
+          minWidth: '60px',
           width: isExpanded ? 'auto' : '60px',
           paddingRight: isExpanded ? '16px' : '0',
         }}

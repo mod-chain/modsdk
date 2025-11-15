@@ -15,188 +15,211 @@ const navigation = [
   { name: 'Chat', href: '/chat', icon: ChatBubbleLeftRightIcon },
 ]
 
-const MIN_WIDTH = 80
-const MAX_WIDTH = 400
-const DEFAULT_WIDTH = 280
+const FIXED_WIDTH = 80
 
 export function Sidebar() {
   const pathname = usePathname()
   const { isSidebarExpanded, toggleSidebar } = useSidebarContext()
-  const [sidebarWidth, setSidebarWidth] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return parseInt(localStorage.getItem('sidebar_width') || String(DEFAULT_WIDTH))
-    }
-    return DEFAULT_WIDTH
-  })
-  const [isResizing, setIsResizing] = useState(false)
-  const sidebarRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('sidebar_width', String(sidebarWidth))
-    }
-  }, [sidebarWidth])
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsResizing(true)
-  }
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing) return
-      
-      const newWidth = e.clientX
-      if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
-        setSidebarWidth(newWidth)
-      }
-    }
-
-    const handleMouseUp = () => {
-      setIsResizing(false)
-    }
-
-    if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove)
-      document.addEventListener('mouseup', handleMouseUp)
-      document.body.style.cursor = 'ew-resize'
-      document.body.style.userSelect = 'none'
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-    }
-  }, [isResizing])
-
-  const displayWidth = isSidebarExpanded ? sidebarWidth : MIN_WIDTH
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null)
+  const [showServerSettings, setShowServerSettings] = useState(false)
 
   return (
     <>
-      <motion.div
-        ref={sidebarRef}
-        initial={false}
-        animate={{ width: displayWidth }}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className="fixed left-0 top-20 h-[calc(100vh-5rem)] border-r border-white/10 bg-gradient-to-b from-black via-gray-950 to-black z-40 hover:border-green-500/50 transition-all shadow-2xl shadow-green-500/10"
-        style={{ width: displayWidth }}
+      <div
+        className="fixed"
+        style={{ width: FIXED_WIDTH, zIndex: 40 }}
       >
         <div className="flex h-full flex-col relative">
-          <div className="absolute top-2 right-2 z-50">
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                toggleSidebar()
-              }}
-              className="p-2 rounded-lg hover:bg-green-500/20 text-gray-400 hover:text-green-400 transition-all duration-200 hover:scale-110 active:scale-95 border border-transparent hover:border-green-500/30"
-              title={isSidebarExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
-            >
-              {isSidebarExpanded ? (
-                <ChevronLeftIcon className="h-5 w-5" />
-              ) : (
-                <ChevronRightIcon className="h-5 w-5" />
-              )}
-            </button>
-          </div>
-
-          <nav className="flex-1 px-3 py-4 pt-16 overflow-y-auto space-y-2">
+          <nav className="flex-1 px-3 py-4 pt-4 overflow-y-auto space-y-2">
             {navigation.map((item) => {
               const isActive = pathname === item.href
               return (
-                <Link
+                <div
                   key={item.name}
-                  href={item.href}
-                  className={`group relative flex items-center rounded-lg p-3 text-base font-semibold transition-all duration-200 ${
-                    isActive
-                      ? 'bg-green-500/20 text-green-400 shadow-lg shadow-green-500/20 border border-green-500/30'
-                      : 'text-gray-400 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/20'
-                  } ${isSidebarExpanded ? 'gap-x-3' : 'justify-center'}`}
-                  title={!isSidebarExpanded ? item.name : undefined}
-                  onClick={(e) => e.stopPropagation()}
+                  className="relative"
+                  onMouseEnter={() => setHoveredItem(item.name)}
+                  onMouseLeave={() => setHoveredItem(null)}
                 >
-                  <item.icon
-                    className="shrink-0 transition-transform duration-200 group-hover:scale-110"
-                    style={{
-                      color: isActive ? '#4ade80' : '#9ca3af',
-                      width: '1.75rem',
-                      height: '1.75rem',
-                      minWidth: '1.75rem',
-                      minHeight: '1.75rem'
-                    }}
-                    aria-hidden="true"
-                  />
+                  <Link
+                    href={item.href}
+                    className={`group relative flex items-center justify-center rounded-lg p-3 text-base font-semibold transition-all duration-200 ${
+                      isActive
+                        ? 'bg-green-500/20 text-green-400 shadow-lg shadow-green-500/20 border border-green-500/30'
+                        : 'text-gray-400 hover:text-white hover:bg-white/10 border border-transparent hover:border-white/20'
+                    }`}
+                  >
+                    <item.icon
+                      className="shrink-0 transition-transform duration-200 group-hover:scale-110"
+                      style={{
+                        color: isActive ? '#4ade80' : '#9ca3af',
+                        width: '1.75rem',
+                        height: '1.75rem',
+                        minWidth: '1.75rem',
+                        minHeight: '1.75rem'
+                      }}
+                      aria-hidden="true"
+                    />
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeNav"
+                        className="absolute inset-0 bg-green-500/10 rounded-lg -z-10"
+                        initial={false}
+                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                      />
+                    )}
+                  </Link>
                   <AnimatePresence>
-                    {isSidebarExpanded && (
-                      <motion.span
+                    {hoveredItem === item.name && (
+                      <motion.div
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -10 }}
-                        transition={{ duration: 0.2, ease: 'easeOut' }}
-                        className="whitespace-nowrap text-base font-semibold"
+                        transition={{ duration: 0.15 }}
+                        className="fixed pointer-events-none"
+                        style={{ 
+                          zIndex: 99999,
+                          left: `${FIXED_WIDTH + 8}px`,
+                          top: 'auto'
+                        }}
                       >
-                        {item.name}
-                      </motion.span>
+                        <div className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-xl border border-green-500/30 whitespace-nowrap text-sm font-medium">
+                          {item.name}
+                          <div className="absolute right-full top-1/2 -translate-y-1/2 border-8 border-transparent border-r-gray-900" />
+                        </div>
+                      </motion.div>
                     )}
                   </AnimatePresence>
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeNav"
-                      className="absolute inset-0 bg-green-500/10 rounded-lg -z-10"
-                      initial={false}
-                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                    />
-                  )}
-                </Link>
+                </div>
               )
             })}
           </nav>
 
-          <div className="border-t border-white/10 p-3 bg-black/50">
-            <AnimatePresence mode="wait">
-              {isSidebarExpanded ? (
+          <div className="border-t border-white/10 p-3 bg-black/50 relative">
+            <div
+              onMouseEnter={() => setHoveredItem('settings')}
+              onMouseLeave={() => setHoveredItem(null)}
+            >
+              <button
+                onClick={() => setShowServerSettings(!showServerSettings)}
+                className="w-full p-2 rounded-md hover:bg-white/5 text-gray-400 hover:text-white transition-colors flex items-center justify-center"
+              >
+                <Cog6ToothIcon className="h-6 w-6" />
+              </button>
+              <AnimatePresence>
+                {hoveredItem === 'settings' && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    transition={{ duration: 0.15 }}
+                    className="fixed pointer-events-none"
+                    style={{ 
+                      zIndex: 99999,
+                      left: `${FIXED_WIDTH + 8}px`,
+                      bottom: '12px'
+                    }}
+                  >
+                    <div className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-xl border border-green-500/30 whitespace-nowrap text-sm font-medium">
+                      API Settings
+                      <div className="absolute right-full top-1/2 -translate-y-1/2 border-8 border-transparent border-r-gray-900" />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            <AnimatePresence>
+              {showServerSettings && (
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
+                  initial={{ opacity: 0, x: -20, width: 0 }}
+                  animate={{ opacity: 1, x: 0, width: 320 }}
+                  exit={{ opacity: 0, x: -20, width: 0 }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  className="fixed bottom-0 bg-gray-900 border border-green-500/30 rounded-lg shadow-2xl overflow-hidden"
+                  style={{ 
+                    zIndex: 99999,
+                    left: `${FIXED_WIDTH}px`
+                  }}
                 >
-                  <BackendSettings />
-                </motion.div>
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="flex justify-center"
-                >
-                  <BackendSettings />
+                  <ServerSettingsPanel onClose={() => setShowServerSettings(false)} />
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
         </div>
-
-        {isSidebarExpanded && (
-          <div
-            className="resize-handle absolute right-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-green-500/50 transition-colors z-50 active:bg-green-500"
-            onMouseDown={handleMouseDown}
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              backgroundColor: isResizing ? 'rgba(34, 197, 94, 0.8)' : 'transparent',
-            }}
-          />
-        )}
-      </motion.div>
+      </div>
 
       <style jsx global>{`
         :root {
-          --sidebar-width: ${displayWidth}px;
+          --sidebar-width: ${FIXED_WIDTH}px;
         }
       `}</style>
     </>
   )
 }
+
+function ServerSettingsPanel({ onClose }: { onClose: () => void }) {
+  const [inputUrl, setInputUrl] = useState<string>('')
+  const DEFAULT_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+  useEffect(() => {
+    const saved = localStorage.getItem('custom_node_url')
+    if (saved) {
+      setInputUrl(saved)
+    } else {
+      setInputUrl(DEFAULT_API_URL)
+    }
+  }, [])
+
+  const handleSave = () => {
+    if (inputUrl.trim()) {
+      localStorage.setItem('custom_node_url', inputUrl.trim())
+      window.location.reload()
+    }
+  }
+
+  const handleReset = () => {
+    localStorage.removeItem('custom_node_url')
+    setInputUrl(DEFAULT_API_URL)
+    window.location.reload()
+  }
+
+  return (
+    <div className="p-4 space-y-3 w-80">
+      <div className="flex items-center justify-between">
+        <h3 className="text-white font-semibold text-base">Server Settings</h3>
+        <button
+          onClick={onClose}
+          className="text-gray-400 hover:text-white transition-colors"
+        >
+          ✕
+        </button>
+      </div>
+      <div className="space-y-2">
+        <label className="text-sm text-gray-400">API URL</label>
+        <input
+          type="text"
+          value={inputUrl}
+          onChange={(e) => setInputUrl(e.target.value)}
+          placeholder="Enter API URL"
+          className="w-full bg-black/40 border border-white/10 text-white text-sm placeholder:text-white/40 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500/50"
+        />
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={handleSave}
+          className="flex-1 px-3 py-2 text-sm bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 rounded-md transition-colors font-medium"
+        >
+          Save
+        </button>
+        <button
+          onClick={handleReset}
+          className="flex-1 px-3 py-2 text-sm border border-white/10 hover:bg-white/10 rounded-md transition-colors text-white font-medium"
+        >
+          Reset
+        </button>
+      </div>
+    </div>
+  )
+}
+
+import { Cog6ToothIcon } from '@heroicons/react/24/outline'
