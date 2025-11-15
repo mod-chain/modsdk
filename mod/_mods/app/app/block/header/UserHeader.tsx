@@ -16,6 +16,7 @@ export function UserHeader() {
   const [isExpanded, setIsExpanded] = useState(true)
   const [isNarrow, setIsNarrow] = useState(false)
   const [balance, setBalance] = useState<number | undefined>(undefined)
+  const [isOverBudget, setIsOverBudget] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -40,6 +41,7 @@ export function UserHeader() {
         if (result.success && result.balance) {
           const freeBalance = parseFloat(result.balance.free) / 1e9
           setBalance(freeBalance)
+          setIsOverBudget(freeBalance > 1000)
         }
       }
     }
@@ -92,11 +94,11 @@ export function UserHeader() {
     >
       <div
         onClick={handleUserClick}
-        className="flex items-center gap-3 transition-all duration-300 backdrop-blur-xl rounded-2xl border-2 overflow-hidden cursor-pointer hover:shadow-2xl"
+        className={`flex items-center gap-3 transition-all duration-300 backdrop-blur-xl rounded-2xl border-2 overflow-hidden cursor-pointer hover:shadow-2xl ${isOverBudget ? 'animate-pulse' : ''}`}
         style={{
-          borderColor: `${userColor}80`,
-          backgroundColor: `${userColor}15`,
-          boxShadow: `0 0 30px ${userColor}40`,
+          borderColor: isOverBudget ? '#ff0000' : `${userColor}80`,
+          backgroundColor: isOverBudget ? '#ff000025' : `${userColor}15`,
+          boxShadow: isOverBudget ? '0 0 40px #ff000060' : `0 0 30px ${userColor}40`,
           height: '60px',
           minWidth: '60px',
           width: isExpanded ? 'auto' : '60px',
@@ -119,7 +121,7 @@ export function UserHeader() {
             }
           }}
         >
-          <KeyIcon className="w-9 h-9" style={{ color: userColor }} />
+          <KeyIcon className="w-9 h-9" style={{ color: isOverBudget ? '#ff0000' : userColor }} />
         </div>
 
         <div 
@@ -134,16 +136,19 @@ export function UserHeader() {
 
           {balance !== undefined && (
             <div className="flex flex-col">
-              <div className="font-black text-lg" style={{ color: userColor }}>
+              <div className={`font-black text-lg ${isOverBudget ? 'text-red-500' : ''}`} style={{ color: isOverBudget ? '#ff0000' : userColor }}>
                 {balance.toFixed(2)}
               </div>
+              {isOverBudget && (
+                <div className="text-xs text-red-400 font-bold uppercase tracking-wider">OVER BUDGET!</div>
+              )}
             </div>
           )}
 
           {user?.mods && user.mods.length > 0 && (
             <div className="flex flex-col">
               <div className="text-xs text-white/60 font-bold uppercase tracking-wider">Mods</div>
-              <div className="font-black text-lg" style={{ color: userColor }}>
+              <div className="font-black text-lg" style={{ color: isOverBudget ? '#ff0000' : userColor }}>
                 {user.mods.length}
               </div>
             </div>
@@ -151,7 +156,7 @@ export function UserHeader() {
 
           <div className="flex flex-col min-w-[200px]">
             <div className="flex items-center gap-2">
-              <div className="font-mono font-black text-lg truncate max-w-[180px]" style={{ color: userColor }}>
+              <div className="font-mono font-black text-lg truncate max-w-[180px]" style={{ color: isOverBudget ? '#ff0000' : userColor }}>
                 {shorten(displayAddress, 8, 8)}
               </div>
               <CopyButton content={displayAddress} size="sm"  />

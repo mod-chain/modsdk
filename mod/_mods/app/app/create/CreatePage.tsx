@@ -1,18 +1,18 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Package, Upload, Github, Database, Send, Loader2, CheckCircle, AlertCircle, Sparkles, Zap } from 'lucide-react'
+import { Package, Upload, Database, Send, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
 import {useUserContext} from '@/app/block/context/UserContext'
-import { Key } from '@/app/block/key'
 import { web3Enable, web3FromAddress } from '@polkadot/extension-dapp'
 import { stringToU8a, u8aToHex } from '@polkadot/util'
 import ModCard from '@/app/mod/explore/ModCard'
 import { ModuleType } from '@/app/types'
-
+import { UrlTypeSelector, UrlType } from './UrlTypeSelector'
 
 export const CreateMod = ( ) => {
   const { client, localKey } = useUserContext()
   const [isSubwalletEnabled, setIsSubwalletEnabled] = useState(false)
   const [modUrl, setModUrl] = useState('')
+  const [urlType, setUrlType] = useState<UrlType>('git')
   const [modName, setModName] = useState('')
   const [collateral, setCollateral] = useState(0.0)
   const [isLoading, setIsLoading] = useState(false)
@@ -28,35 +28,26 @@ export const CreateMod = ( ) => {
   useEffect(() => {
     const walletMode = localStorage.getItem('wallet_mode')
     const address = localStorage.getItem('wallet_address')
-    const password = localStorage.getItem('wallet_password')
     
     setIsSubwalletEnabled(walletMode === 'subwallet')
     setIsLocalWallet(walletMode === 'local')
     setWalletAddress(address || '')
-    
   }, [client])
 
-
-  const handleUrlChange = (e) => {
-    const value = e.target.value || '';
-    setModUrl(value);
-
-  if (!client) {
-        throw new Error('Client not initialized')
-      }
-
-    const namePart = value.split('/')[value.split('/').length - 1];
-    setModName(namePart);
-
-  };
+  const handleUrlChange = (value: string, inferredType: UrlType) => {
+    setModUrl(value)
+    setUrlType(inferredType)
+    const namePart = value.split('/')[value.split('/').length - 1]
+    setModName(namePart)
+  }
 
   const handleNameChange = (e) => {
-    setModName(e.target.value || '');
-  };
+    setModName(e.target.value || '')
+  }
 
   const generateRegInfo = async () => {
     if (!modUrl.trim()) {
-      setError('Please enter a valid URL or IPFS hash')
+      setError('Please enter a valid URL or hash')
       return
     }
 
@@ -71,7 +62,6 @@ export const CreateMod = ( ) => {
       let signerAddress: string
       let mod_preview: any
       if (isSubwalletEnabled && walletAddress) {
-
         mod_preview = await client.call('mod_preview', {'url': modUrl.trim(), 'key':walletAddress , 'collateral': collateral})
         let messageToSign = JSON.stringify(mod_preview)
 
@@ -101,7 +91,6 @@ export const CreateMod = ( ) => {
         let messageToSign = JSON.stringify(mod_preview)
         signature = localKey.sign(messageToSign)
         signerAddress = localKey.address
-        console.log('Signed with local key:', { signature, signerAddress })
       } else {
         throw new Error('No signing method available. Please connect SubWallet or sign in with Local Key first.')
       }
@@ -123,7 +112,7 @@ export const CreateMod = ( ) => {
 
   const handleCreateModule = async () => {
     if (!modUrl.trim()) {
-      setError('Please enter a valid URL or IPFS hash')
+      setError('Please enter a valid URL or hash')
       return
     }
 
@@ -132,7 +121,6 @@ export const CreateMod = ( ) => {
     setSuccess(null)
     setSignatureInfo(null)
     setCreatedMod(null)
-
 
     try {
       const timestamp = Date.now()
@@ -163,19 +151,10 @@ export const CreateMod = ( ) => {
       } else if (wallet_mode === 'local' && localKey) {
         signature = localKey.sign(messageToSign)
         signerAddress = localKey.address
-        console.log('Signed with local key:', { signature, signerAddress })
       } else {
         throw new Error('No signing method available. Please connect SubWallet or sign in with Local Key first.')
       }
 
-      const params = {
-        url: modUrl.trim(),
-        name: modName.trim() || undefined,
-        collateral: collateral,
-        signature: signature,
-        timestamp: timestamp,
-        key: signerAddress
-      }
       const regInfoObj = regInfo ? JSON.parse(regInfo) : null 
       if (!client) {
         throw new Error('Client not initialized')
@@ -213,47 +192,33 @@ export const CreateMod = ( ) => {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-gradient-to-br from-black via-purple-950/20 to-black">
       <div className="max-w-4xl mx-auto px-6 py-12 space-y-8">
         
-        {/* HEADER */}
         <div className="text-center space-y-3 mb-10">
-          <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400">
-            CREATE MODULE
-          </h1>
-          <p className="text-gray-400 text-lg font-mono">
-            Deploy your module to the network
+          <p className="text-white text-3xl font-bold font-mono drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+            (+) mod (+)
           </p>
         </div>
 
-
-        {/* MAIN FORM */}
-        <div className="rounded-xl bg-black border-2 border-cyan-500/40 p-8 shadow-[0_0_40px_rgba(6,182,212,0.2)]">
+        <div className="rounded-xl bg-gradient-to-br from-purple-900/30 via-black to-cyan-900/30 border-2 border-white/60 p-8 shadow-[0_0_60px_rgba(255,255,255,0.3)]">
           <div className="space-y-6">
-            {/* URL INPUT */}
             <div className="space-y-3">
-              <label className="flex items-center gap-2 text-cyan-300 font-bold text-sm uppercase tracking-wider">
-                <Github size={18} />
-                <span>Repository URL or IPFS Hash</span>
+              <label className="flex items-center gap-2 text-white font-black text-2xl uppercase tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+                <Database size={28} />
+                <span>Repository URL or Storage Hash</span>
               </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={modUrl}
-                  onChange={handleUrlChange}
-                  placeholder="https://github.com/username/repo or ipfs://Qm..."
-                  className="w-full bg-black/90 border-2 border-cyan-500/40 rounded-lg px-4 py-4 pl-12 text-cyan-300 font-mono text-base placeholder-cyan-600/50 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all"
-                />
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-500/70">
-                  {modUrl.includes('github') ? <Github size={22} /> : <Database size={22} />}
-                </div>
-              </div>
+              <UrlTypeSelector
+                value={modUrl}
+                onChange={handleUrlChange}
+                selectedType={urlType}
+                onTypeChange={setUrlType}
+              />
             </div>
 
-            {/* NAME INPUT */}
             <div className="space-y-3">
-              <label className="flex items-center gap-2 text-cyan-300 font-bold text-sm uppercase tracking-wider">
-                <Package size={18} />
+              <label className="flex items-center gap-2 text-white font-black text-2xl uppercase tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+                <Package size={28} />
                 <span>Module Name</span>
               </label>
               <div className="relative">
@@ -262,18 +227,17 @@ export const CreateMod = ( ) => {
                   value={modName}
                   onChange={handleNameChange}
                   placeholder="my-awesome-module"
-                  className="w-full bg-black/90 border-2 border-cyan-500/40 rounded-lg px-4 py-4 pl-12 text-cyan-300 font-mono text-base placeholder-cyan-600/50 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all"
+                  className="w-full bg-black/90 border-2 border-white/60 rounded-lg px-4 py-5 pl-12 text-white font-mono text-xl placeholder-white/40 focus:outline-none focus:border-white focus:shadow-[0_0_30px_rgba(255,255,255,0.5)] transition-all"
                 />
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-500/70">
-                  <Package size={22} />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/70">
+                  <Package size={26} />
                 </div>
               </div>
             </div>
 
-            {/* COLLATERAL INPUT */}
             <div className="space-y-3">
-              <label className="flex items-center gap-2 text-cyan-300 font-bold text-sm uppercase tracking-wider">
-                <Database size={18} />
+              <label className="flex items-center gap-2 text-white font-black text-2xl uppercase tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+                <Database size={28} />
                 <span>Collateral Amount</span>
               </label>
               <div className="relative">
@@ -283,60 +247,57 @@ export const CreateMod = ( ) => {
                   value={collateral}
                   onChange={(e) => setCollateral(parseFloat(e.target.value) || 0.0)}
                   placeholder="0.00"
-                  className="w-full bg-black/90 border-2 border-cyan-500/40 rounded-lg px-4 py-4 pl-12 text-cyan-300 font-mono text-base placeholder-cyan-600/50 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all"
+                  className="w-full bg-black/90 border-2 border-white/60 rounded-lg px-4 py-5 pl-12 text-white font-mono text-xl placeholder-white/40 focus:outline-none focus:border-white focus:shadow-[0_0_30px_rgba(255,255,255,0.5)] transition-all"
                 />
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-500/70">
-                  <Database size={22} />
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/70">
+                  <Database size={26} />
                 </div>
               </div>
             </div>
 
-            {/* PREVIEW BUTTON */}
             <button
               onClick={generateRegInfo}
               disabled={!modUrl.trim() || (!isSubwalletEnabled && !isLocalWallet) || isPreviewLoading}
-              className="w-full py-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 border-2 border-cyan-400/50 text-white font-bold rounded-lg uppercase text-base disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all shadow-[0_0_25px_rgba(6,182,212,0.35)] hover:shadow-[0_0_35px_rgba(6,182,212,0.5)]"
+              className="w-full py-5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 border-2 border-white/60 text-white font-black rounded-lg uppercase text-2xl disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all shadow-[0_0_40px_rgba(255,255,255,0.4)] hover:shadow-[0_0_50px_rgba(255,255,255,0.6)]"
             >
               {isPreviewLoading ? (
                 <>
-                  <Loader2 size={22} className="animate-spin" />
+                  <Loader2 size={28} className="animate-spin" />
                   <span>GENERATING PREVIEW...</span>
                 </>
               ) : (
                 <>
-                  <CheckCircle size={22} />
+                  <CheckCircle size={28} />
                   <span>PREVIEW MODULE JSON</span>
                 </>
               )}
             </button>
 
-            {/* PREVIEW JSON */}
             {regInfo && (
-              <div className="rounded-lg bg-black/80 border-2 border-blue-500/40 p-6 shadow-[0_0_20px_rgba(59,130,246,0.15)]">
-                <div className="flex items-center gap-2 text-blue-300 font-bold text-sm uppercase mb-4 tracking-wider">
-                  <CheckCircle size={20} />
+              <div className="rounded-lg bg-black/80 border-2 border-white/60 p-6 shadow-[0_0_30px_rgba(255,255,255,0.2)]">
+                <div className="flex items-center gap-2 text-white font-black text-2xl uppercase mb-4 tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+                  <CheckCircle size={24} />
                   <span>JSON PREVIEW</span>
                 </div>
-                <pre className="text-blue-300 font-mono text-xs overflow-x-auto bg-black/90 p-5 rounded-lg border-2 border-blue-500/30 max-h-80 overflow-y-auto">
+                <pre className="text-white font-mono text-lg overflow-x-auto bg-black/90 p-5 rounded-lg border-2 border-white/40 max-h-80 overflow-y-auto">
                   {regInfo}
                 </pre>
               </div>
             )}
 
-            {/* CREATE BUTTON */}
             <button
               onClick={handleCreateModule}
               disabled={!modUrl.trim() || isLoading || (!isSubwalletEnabled && !isLocalWallet)}
-              className="w-full py-5 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 hover:from-purple-500 hover:via-pink-500 hover:to-purple-500 border-2 border-purple-400/50 text-white font-bold rounded-lg uppercase text-lg disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all shadow-[0_0_30px_rgba(168,85,247,0.4)] hover:shadow-[0_0_45px_rgba(168,85,247,0.6)]"
+              className="w-full py-6 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 hover:from-purple-500 hover:via-pink-500 hover:to-purple-500 border-2 border-white/60 text-white font-black rounded-lg uppercase text-2xl disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all shadow-[0_0_50px_rgba(255,255,255,0.5)] hover:shadow-[0_0_60px_rgba(255,255,255,0.7)]"
             >
               {isLoading ? (
                 <>
-                  <Loader2 size={24} className="animate-spin" />
+                  <Loader2 size={30} className="animate-spin" />
                   <span>DEPLOYING MODULE...</span>
                 </>
               ) : (
                 <>
-                  <Upload size={24} />
+                  <Upload size={30} />
                   <span>DEPLOY MODULE</span>
                 </>
               )}
@@ -344,60 +305,56 @@ export const CreateMod = ( ) => {
           </div>
         </div>
 
-        {/* CREATED MODULE CARD */}
         {createdMod && (
           <div className="space-y-6">
-            <div className="flex items-center justify-center gap-3 text-green-400 font-bold text-xl uppercase tracking-wide">
-              <CheckCircle size={26} />
+            <div className="flex items-center justify-center gap-3 text-white font-black text-3xl uppercase tracking-wide drop-shadow-[0_0_20px_rgba(255,255,255,0.6)]">
+              <CheckCircle size={32} />
               <span>MODULE SUCCESSFULLY DEPLOYED</span>
             </div>
             <ModCard mod={createdMod} card_enabled={true} />
           </div>
         )}
 
-        {/* SIGNATURE INFO */}
         {signatureInfo && (
-          <div className="rounded-lg bg-black/80 border-2 border-cyan-500/40 p-6 shadow-[0_0_25px_rgba(6,182,212,0.15)]">
-            <div className="flex items-center gap-2 text-cyan-300 font-bold text-sm uppercase mb-5 tracking-wider">
-              <CheckCircle size={20} />
+          <div className="rounded-lg bg-black/80 border-2 border-white/60 p-6 shadow-[0_0_40px_rgba(255,255,255,0.2)]">
+            <div className="flex items-center gap-2 text-white font-black text-2xl uppercase mb-5 tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+              <CheckCircle size={24} />
               <span>SIGNATURE VERIFICATION</span>
             </div>
-            <div className="space-y-4 text-cyan-300 font-mono text-sm">
-              <div className="bg-black/90 p-4 rounded-lg border-2 border-cyan-500/30">
-                <span className="text-cyan-400/80 block mb-2 font-bold uppercase text-xs">ADDRESS:</span>
-                <p className="break-all text-cyan-300">{signatureInfo.address}</p>
+            <div className="space-y-4 text-white font-mono text-lg">
+              <div className="bg-black/90 p-4 rounded-lg border-2 border-white/40">
+                <span className="text-white/80 block mb-2 font-black uppercase text-base">ADDRESS:</span>
+                <p className="break-all text-white">{signatureInfo.address}</p>
               </div>
-              <div className="bg-black/90 p-4 rounded-lg border-2 border-cyan-500/30">
-                <span className="text-cyan-400/80 block mb-2 font-bold uppercase text-xs">TIMESTAMP:</span>
-                <p className="text-cyan-300">{new Date(signatureInfo.timestamp).toISOString()}</p>
+              <div className="bg-black/90 p-4 rounded-lg border-2 border-white/40">
+                <span className="text-white/80 block mb-2 font-black uppercase text-base">TIMESTAMP:</span>
+                <p className="text-white">{new Date(signatureInfo.timestamp).toISOString()}</p>
               </div>
-              <div className="bg-black/90 p-4 rounded-lg border-2 border-cyan-500/30">
-                <span className="text-cyan-400/80 block mb-2 font-bold uppercase text-xs">SIGNATURE:</span>
-                <p className="break-all text-cyan-300 text-xs">{signatureInfo.signature}</p>
+              <div className="bg-black/90 p-4 rounded-lg border-2 border-white/40">
+                <span className="text-white/80 block mb-2 font-black uppercase text-base">SIGNATURE:</span>
+                <p className="break-all text-white text-base">{signatureInfo.signature}</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* ERROR MESSAGE */}
         {error && (
-          <div className="rounded-lg bg-black/80 border-2 border-red-500/50 p-6 shadow-[0_0_25px_rgba(239,68,68,0.2)]">
-            <div className="flex items-center gap-2 text-red-300 font-bold text-sm uppercase mb-3 tracking-wider">
-              <AlertCircle size={20} />
+          <div className="rounded-lg bg-black/80 border-2 border-red-500/60 p-6 shadow-[0_0_40px_rgba(239,68,68,0.3)]">
+            <div className="flex items-center gap-2 text-white font-black text-2xl uppercase mb-3 tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+              <AlertCircle size={24} />
               <span>ERROR</span>
             </div>
-            <p className="text-red-300 font-mono text-sm bg-black/90 p-4 rounded-lg border-2 border-red-500/30">{error}</p>
+            <p className="text-white font-mono text-lg bg-black/90 p-4 rounded-lg border-2 border-red-500/40">{error}</p>
           </div>
         )}
 
-        {/* SUCCESS MESSAGE */}
         {success && (
-          <div className="rounded-lg bg-black/80 border-2 border-green-500/50 p-6 shadow-[0_0_25px_rgba(34,197,94,0.2)]">
-            <div className="flex items-center gap-2 text-green-300 font-bold text-sm uppercase mb-3 tracking-wider">
-              <CheckCircle size={20} />
+          <div className="rounded-lg bg-black/80 border-2 border-green-500/60 p-6 shadow-[0_0_40px_rgba(34,197,94,0.3)]">
+            <div className="flex items-center gap-2 text-white font-black text-2xl uppercase mb-3 tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+              <CheckCircle size={24} />
               <span>SUCCESS</span>
             </div>
-            <p className="text-green-300 font-mono text-sm bg-black/90 p-4 rounded-lg border-2 border-green-500/30">{success}</p>
+            <p className="text-white font-mono text-lg bg-black/90 p-4 rounded-lg border-2 border-green-500/40">{success}</p>
           </div>
         )}
       </div>

@@ -53,8 +53,8 @@ export default function ModCard({ mod, card_enabled = true}: ModCardProps) {
           {/* Top level: Name and Key */}
           <div className="flex items-center gap-3 justify-between mb-3">
             <div className="flex items-center gap-2 min-w-0 flex-shrink">
-              <CubeIcon className="h-6 w-6 flex-shrink-0" style={{ color: modColor }} />
-              <code className="text-lg font-mono font-bold truncate" style={{ color: modColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }} title={mod.name}>
+              <CubeIcon className="h-10 w-10 flex-shrink-0" style={{ color: modColor }} />
+              <code className="text-2xl font-mono font-bold truncate text-white" style={{ fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }} title={mod.name}>
                 {mod.name}
               </code>
             </div>
@@ -62,11 +62,11 @@ export default function ModCard({ mod, card_enabled = true}: ModCardProps) {
             {/* Author on top right */}
             <div className="flex items-center gap-2 px-3 py-2 rounded-md border flex-shrink-0" style={{ backgroundColor: `rgba(${userRgb.r}, ${userRgb.g}, ${userRgb.b}, 0.1)`, borderColor: `rgba(${userRgb.r}, ${userRgb.g}, ${userRgb.b}, 0.4)` }}>
               <Link href={`/user/${mod.key}`} onClick={(e) => e.stopPropagation()} className="hover:scale-110 transition-transform">
-                <KeyIcon className="w-5 h-5" style={{ color: userColor }} />
+                <KeyIcon className="w-10 h-10" style={{ color: userColor }} />
               </Link>
               <Link href={`/user/${mod.key}`} onClick={(e) => e.stopPropagation()} className="hover:underline">
-                <code className="text-sm font-mono font-bold" style={{ color: userColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }} title={mod.key}>
-                  {shorten(mod.key, 4, 4)}
+                <code className="text-lg font-mono font-bold" style={{ color: userColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }} title={mod.key}>
+                  {shorten(mod.key, 12, 12)}
                 </code>
               </Link>
               <CopyButton text={mod.key} size="sm" />
@@ -98,7 +98,7 @@ export default function ModCard({ mod, card_enabled = true}: ModCardProps) {
               {!card_enabled && mod.cid && (
                 <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-md border flex-shrink-0" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1)`, borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.4)` }}>
                   <Hash size={16} strokeWidth={2.5} style={{ color: modColor }} />
-                  <code className="text-sm font-mono font-bold" style={{ color: modColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }} title={mod.cid}>
+                  <code className="text-lg font-mono font-bold" style={{ color: modColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }} title={mod.cid}>
                     {shorten(mod.cid, 4, 4)}
                   </code>
                   <CopyButton text={mod.cid} size="sm" />
@@ -108,7 +108,7 @@ export default function ModCard({ mod, card_enabled = true}: ModCardProps) {
               {/* Collateral */}
               <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-md border" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`, borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)` }}>
                 <span className="text-lg" title="Collateral">🪙</span>
-                <code className="text-sm font-mono font-bold" style={{ color: modColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }} title={`Collateral: ${collateral}`}>
+                <code className="text-lg font-mono font-bold" style={{ color: modColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }} title={`Collateral: ${collateral}`}>
                   {collateral}
                 </code>
                 <CopyButton text={String(collateral)} size="sm" />
@@ -117,7 +117,7 @@ export default function ModCard({ mod, card_enabled = true}: ModCardProps) {
               {/* Updated */}
               <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-md border" style={{ backgroundColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.08)`, borderColor: `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.3)` }}>
                 <Clock size={16} strokeWidth={2.5} style={{ color: modColor }} />
-                <code className="text-sm font-mono font-bold" style={{ color: modColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }} title={updatedTimeStr}>
+                <code className="text-lg font-mono font-bold" style={{ color: modColor, fontFamily: "'Courier New', 'Consolas', 'Monaco', monospace" }} title={updatedTimeStr}>
                   {updatedTimeStr}
                 </code>
                 <CopyButton text={updatedTimeStr} size="sm" />
